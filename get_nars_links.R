@@ -24,4 +24,4 @@ nars_data <- tbls_ls[[1]]
 nars_data$data_link <- data_links_full
 # nars_data$metadata_link <- metadata_links_full
 
-write.csv(nars_data, "nars_data_table.csv", row.names = FALSE)
+# write.csv(nars_data, "nars_data_table.csv", row.names = FALSE)
