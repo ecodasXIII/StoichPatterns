@@ -1,0 +1,53 @@
+---
+title: "NARS data download"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(readr)
+library(dplyr)
+library(purrr)
+```
+
+Read in the table created with `get_nars_links.R`. 
+
+```{r}
+nars_data <- read_csv("data/nars_data_table.csv")
+```
+
+List all the values in the indicator column
+
+```{r}
+unique(nars_data$Indicator)
+```
+
+Get the subset of files that are associated with Water Chemistry data
+
+```{r}
+wq_data <- filter(nars_data, Indicator == "Water Chemistry")
+```
+
+```{r}
+wq_data$data_link
+```
+Download all the csv files in the data links column using basename as object name
+
+This would make one data frame if they all have the same columns....
+```{r}
+# basename(wq_data$data_link, )
+# woops theres one that is xlsx
+wq_df <- wq_data$data_link[1:2] %>%
+  map_df(read_csv, .id = "filename")
+```
+
+This will make a list where the input from each file is separate, and then can be iterated over. 5th link is xlsx. not sure what is going on with 3rd file
+
+```{r}
+wq_dfs_list <- wq_data$data_link[c(1:2, 4, 6:13)] %>%
+  map(read_csv)
+```
+
