@@ -1,0 +1,55 @@
+---
+title: "Wetlands 2011 nars data"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Survey names
+```{r}
+nars_data %>% pull(Survey) %>% unique()
+```
+
+```{r}
+nars_data %>% 
+  filter(Survey == "Rivers and Streams 2008-2009") %>%
+  pull(Indicator) %>% unique()
+```
+
+water chemistry data (TN and TP). 2 files for chemistry - chem and chemcond
+
+```{r}
+rivers2008_wc <- nars_data %>% 
+  filter(Survey == "Rivers and Streams 2008-2009",
+         Indicator == "Water Chemistry") %>%
+  pull(filename) %>% 
+  head(1) %>% # because there are 2 files.. 
+  paste0("data/", .) %>%
+  read_csv()
+```
+
+```{r}
+names(rivers2008_wc)
+```
+
+```{r}
+rivervars <- c("UID", "SITE_ID", "DATE_COL", "DOC", "DOC_ALERT", "NTL", "NTL_ALERT", "PTL", "PTL_ALERT")
+```
+
+```{r}
+rivers2008_CNP <- dplyr::select(rivers2008_wc, rivervars)
+```
+
+Convert date column to real date
+
+```{r}
+rivers2008_CNP <- rivers2008_CNP %>%
+  mutate(date_formatted = as.Date(DATE_COL, format = "%d-%b-%y")) 
+```
+
+
+
