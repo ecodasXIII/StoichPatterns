@@ -14,10 +14,19 @@ library(purrr)
 library(fs)
 ```
 
-Read in the table created with `get_nars_links.R`. 
+Read in the csv table created with `get_nars_links.R`. 
 
 ```{r}
 nars_data <- read_csv("data/nars_data_table.csv")
+nars_data$filename <- basename(nars_data$data_link)
+```
+
+Download all the csv files in the data links column into a folder called data (needs to exist first)
+
+```{r}
+map2(.x = nars_data$data_link,
+     .y = file.path("data", basename(nars_data$data_link)), 
+     ~download.file(.x, .y))
 ```
 
 List all the values in the indicator column
@@ -26,18 +35,15 @@ List all the values in the indicator column
 unique(nars_data$Indicator)
 ```
 
+
 Get the subset of files that are associated with Water Chemistry data
 
 ```{r}
 wq_data <- filter(nars_data, Indicator == "Water Chemistry")
 ```
 
-```{r}
-wq_data$data_link
-```
-Download all the csv files in the data links column using basename as object name
-
 This would make one data frame if they all have the same columns....
+
 ```{r}
 # basename(wq_data$data_link, )
 # woops theres one that is xlsx
@@ -52,25 +58,24 @@ wq_dfs_list <- wq_data$data_link[c(1:2, 4, 6:13)] %>%
   map(read_csv)
 ```
 
-To download files onto your local machine
+Subset to just Site information tables
 
 ```{r}
-# file_copy(path = wq_data$data_link[c(1:2, 4, 6:13)], 
-           # new_path = dir_create("data/water_chemistry/"))
+site_info_data <- nars_data %>% 
+  filter(Indicator == "Site Information")
 ```
 
-```{r}
-site_info_data <- nars_data %>% filter(Indicator == "Site Information")
-```
-
-2nd file is weird
+2nd file is weird - read in 1st and 3rd files
 
 ```{r}
 site_dfs_list <- site_info_data$data_link[c(1,3)] %>%
   map(read_csv)
 ```
 
-Only first table so far
+## Map
+
+Mapping data from first table
+
 ```{r}
 library(leaflet)
 library(sf)
