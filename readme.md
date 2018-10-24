@@ -13,7 +13,7 @@ editor_options:
 
 ## Files
 
-* `get_nars_links.R` - makes `nars_data_table.csv` spreadsheet, with an overview of the NARS data and file download links. 
+* `get_nars_links.R` - webscraping to get data links from table on EPA website. Makes `nars_data_table.csv`
 * `data-download.Rmd` - download or read in files from NARS data and example map
 * `wetlands.Rmd` - read in data from wetland 2011 survey
 
