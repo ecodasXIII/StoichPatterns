@@ -1,0 +1,132 @@
+---
+title: "Get NLCD data"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+FedData package has a function for downloading NLCD tiles. Let's see if it works.
+
+```{r, message=FALSE}
+# install.packages("FedData")
+library(FedData)
+library(sf)
+library(leaflet)
+library(readr)
+library(dplyr)
+```
+
+Using wetlands site info file, read in from internet
+
+```{r, message=FALSE}
+w2011_siteinfo <- read_csv("https://www.epa.gov/sites/production/files/2016-10/nwca2011_siteinfo.csv")
+# # or using code below
+# nars_data <- read_csv("data/nars_data_table.csv")
+# nars_data$filename <- basename(nars_data$data_link)
+# 
+# w2011_siteinfo <- nars_data %>% 
+#   filter(Survey == "Wetlands 2011",
+#          Indicator == "Site Information") %>%
+#   pull(filename) %>% 
+#   tail(1) %>% # aachar and siteinfo files
+#   paste0("data/", .) %>%
+#   read_csv()
+```
+
+make into a spatial object assuming these columns are the correct coordinates for sites and in WSG 84. 
+
+```{r}
+template <- w2011_siteinfo %>%
+  st_as_sf(coords = c("AA_CENTER_LON", "AA_CENTER_LAT"), crs = 4326)
+```
+
+Check out where the first few are
+```{r}
+template[1:4,] %>%
+  st_transform(crs = 4326) %>%
+  leaflet() %>%
+  addTiles() %>%
+  addMarkers()
+```
+
+Plot all site locations
+
+```{r}
+plot(template$geometry)
+```
+
+Make buffer around first point
+```{r}
+pt1_buffer <- template %>%
+  dplyr::slice(1) %>% 
+  st_buffer(0.01) # units decimal degrees. i think this is approx 1000m
+```
+
+Plot buffer
+```{r}
+leaflet(pt1_buffer) %>%
+  addProviderTiles(providers$Esri.WorldImagery) %>%
+  addPolygons()
+```
+
+Use buffer in get nlcd function. 
+```{r}
+nlcd_nars <- get_nlcd(as(pt1_buffer, "Spatial"), # wants a spatial sp object not sf 
+                      label = "first wetland site", 
+                      dataset = "landcover",
+                      force.redo = TRUE)
+```
+
+```{r}
+nlcd_nars %>% 
+  plot()
+```
+
+```{r}
+raster::values(nlcd_nars) %>% unique()
+# nlcd_landcover_pam this is a terrible format
+```
+
+Unique values 90, 42, 21, 95, 71
+https://www.mrlc.gov/nlcd11_leg.php
+
+```{r}
+lc_legend_df <- read.table("nlcd_legend.txt", stringsAsFactors = FALSE, sep = ",")
+lc_legend_df<- subset(lc_legend_df,COUNT>0) #subset the data to remove unused rows (but this is from 2006)
+```
+
+
+```{r}
+leaflet(pt1_buffer) %>%
+  addProviderTiles(providers$Esri.WorldImagery) %>%
+  addPolygons() %>%
+  addRasterImage(nlcd_nars)
+```
+
+Mask raster using buffer object after transforming to same CRS. 
+
+```{r}
+pt1_buffer_prj <- st_transform(pt1_buffer, crs = proj4string(nlcd_nars))
+nlcd_nars_mask <- raster::mask(nlcd_nars, as(pt1_buffer_prj, "Spatial"))
+```
+
+```{r}
+plot(nlcd_nars_mask)
+```
+
+tabulate number of cells in each type
+
+```{r}
+raster::freq(nlcd_nars_mask)
+```
+ Merge with legend to see land cover types
+```{r}
+raster::freq(nlcd_nars_mask) %>%
+  as.data.frame() %>%
+ dplyr::left_join(lc_legend_df, by = c("value" = "ID"))
+```
+
