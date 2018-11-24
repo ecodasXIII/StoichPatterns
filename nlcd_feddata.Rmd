@@ -95,10 +95,13 @@ Unique values 90, 42, 21, 95, 71
 https://www.mrlc.gov/nlcd11_leg.php
 
 ```{r}
-lc_legend_df <- read.table("nlcd_legend.txt", stringsAsFactors = FALSE, sep = ",")
-lc_legend_df<- subset(lc_legend_df,COUNT>0) #subset the data to remove unused rows (but this is from 2006)
+# lc_legend_df <- read.table("nlcd_legend.txt", stringsAsFactors = FALSE, sep = ",")
+# lc_legend_df<- subset(lc_legend_df,COUNT>0) #subset the data to remove unused rows (but this is from 2006)
 ```
 
+```{r}
+lc_legend_df <- readr::read_csv("nlcd_legend_2011.csv")
+```
 
 ```{r}
 leaflet(pt1_buffer) %>%
@@ -127,6 +130,7 @@ raster::freq(nlcd_nars_mask)
 ```{r}
 raster::freq(nlcd_nars_mask) %>%
   as.data.frame() %>%
- dplyr::left_join(lc_legend_df, by = c("value" = "ID"))
+  dplyr::filter(!is.na(value)) %>%
+ dplyr::left_join(lc_legend_df, by = c("value" = "Class"))
 ```
 
