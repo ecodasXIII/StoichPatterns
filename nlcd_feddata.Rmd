@@ -75,32 +75,15 @@ leaflet(pt1_buffer) %>%
 
 Use buffer in get nlcd function. 
 ```{r}
-nlcd_nars <- get_nlcd(as(pt1_buffer, "Spatial"), # wants a spatial sp object not sf 
-                      label = "first wetland site", 
-                      dataset = "landcover",
-                      force.redo = TRUE)
+# nlcd_nars <- get_nlcd(as(pt1_buffer, "Spatial"), # wants a spatial sp object not sf 
+#                       label = "first wetland site", 
+#                       dataset = "landcover",year = "2011",
+#                       force.redo = TRUE)
 ```
 
 ```{r}
 nlcd_nars %>% 
   plot()
-```
-
-```{r}
-raster::values(nlcd_nars) %>% unique()
-# nlcd_landcover_pam this is a terrible format
-```
-
-Unique values 90, 42, 21, 95, 71
-https://www.mrlc.gov/nlcd11_leg.php
-
-```{r}
-# lc_legend_df <- read.table("nlcd_legend.txt", stringsAsFactors = FALSE, sep = ",")
-# lc_legend_df<- subset(lc_legend_df,COUNT>0) #subset the data to remove unused rows (but this is from 2006)
-```
-
-```{r}
-lc_legend_df <- readr::read_csv("nlcd_legend_2011.csv")
 ```
 
 ```{r}
@@ -121,16 +104,49 @@ nlcd_nars_mask <- raster::mask(nlcd_nars, as(pt1_buffer_prj, "Spatial"))
 plot(nlcd_nars_mask)
 ```
 
-tabulate number of cells in each type
+tabulate number of cells in each type and Merge with legend to see land cover types
 
 ```{r}
-raster::freq(nlcd_nars_mask)
+lc_legend_df <- readr::read_csv("nlcd_legend_2011.csv")
 ```
- Merge with legend to see land cover types
+
 ```{r}
 raster::freq(nlcd_nars_mask) %>%
   as.data.frame() %>%
   dplyr::filter(!is.na(value)) %>%
- dplyr::left_join(lc_legend_df, by = c("value" = "Class"))
+  dplyr::left_join(lc_legend_df, by = c("value" = "Class")) %>%
+  dplyr::mutate(percent_cover = count/sum(count)) %>%
+  dplyr::select(class_name, percent_cover)
 ```
 
+
+Define function to do all of the above - get percentage of land cover types within polygon. Returns a polygon with columns class_name and percent_cover
+
+```{r}
+get_nlcd_percents <- function(aoi, nlcd_year = "2011"){
+  aoi_sp <- as(aoi, "Spatial")
+  nlcd_nars <- FedData::get_nlcd(aoi_sp, label = "aoi",
+                                 dataset = "landcover",
+                                 year = nlcd_year,
+                                 force.redo = TRUE)
+  aoi_prj <- st_transform(aoi, crs = proj4string(nlcd_nars))
+  nlcd_nars_mask <- raster::mask(nlcd_nars, as(aoi_prj, "Spatial"))
+  
+  lc_legend_df <- readr::read_csv("nlcd_legend_2011.csv")
+
+  cover <- raster::freq(nlcd_nars_mask) %>%
+  as.data.frame() %>%
+  dplyr::filter(!is.na(value)) %>%
+  dplyr::left_join(lc_legend_df, by = c("value" = "Class")) %>%
+  dplyr::mutate(percent_cover = count/sum(count)) %>%
+  dplyr::select(class_name, percent_cover)
+  
+  return(cover)
+}
+```
+
+```{r}
+get_nlcd_percents(aoi = pt1_buffer)
+```
+
+This function can be used to iterate over a list of sf objects. 
