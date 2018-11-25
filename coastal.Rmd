@@ -1,0 +1,136 @@
+---
+title: "Coastal Data WB"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+```
+
+```{r}
+nars_data %>% 
+  filter(Survey == "Coastal 2010") %>%
+  pull(Indicator) %>% unique()
+```
+
+Water chemistry data - Long format
+PARAMETER_NAME==Total Nitrogen, Total Phosphorus
+QA_CODES
+
+```{r}
+coastal2010_wc <- nars_data %>% 
+  filter(Survey == "Coastal 2010",
+         Indicator == "Water Chemistry") %>%
+  pull(filename)
+  ChemPath=paste0("data/", coastal2010_wc) 
+  ChemAssessed=read_csv(ChemPath[1])
+  ChemNotAssessed=read_csv(ChemPath[2])
+  ChemCondition=read_csv(ChemPath[3])
+  
+  #Combining sites that were assessed vs. not assessed for the condition report
+  #Extra column in "not assessed" (Visit Number)
+  TN=rbind.fill(subset(ChemNotAssessed, PARAMETER_NAME=="Total Nitrogen"), subset(ChemAssessed, PARAMETER_NAME=="Total Nitrogen")) 
+  colnames(TN)[colnames(TN)=="RESULT"] <- "TN_Val" #Renaming column
+
+  #26% of TN values have a QA Code; most involve Q22 because many of the sites are "not assessed", or "non-target sites". J01 is also common 
+  TN_QA=count(TN, 'QACODE')
+  TN_QA
+  
+  #Combining sites that were assessed vs. not assessed for the condition report
+  #Extra column in "not assessed" (Visit Number)
+  TP=rbind.fill(subset(ChemNotAssessed, PARAMETER_NAME=="Total Phosphorus"), subset(ChemAssessed,      PARAMETER_NAME=="Total Phosphorus"))
+  colnames(TP)[colnames(TP)=="RESULT"] <- "TP_Val" #Renaming column
+
+  
+  #37% of TP values have a QA Code; Q22, J01, J03, and N are common codes
+  TP_QA=count(TP, 'QACODE')
+  TP_QA
+  
+  
+```
+
+Carbon Data in Sediments 
+PARAMETER_NAME==Total Organic Carbon
+QA_CODES
+
+```{r}
+coastal2010_carbon <- nars_data %>% 
+  filter(Survey == "Coastal 2010",
+         Indicator == "Sediment Chemistry") %>%
+  pull(filename)
+  CarbonPath=paste0("data/", coastal2010_carbon) 
+  CarbonAssessed=read_csv(CarbonPath[1])
+  CarbonNotAssessed=read_csv(CarbonPath[2])
+  
+  #Combining sites that were assessed vs. not assessed for the condition report
+  #Two extra columns in "not assessed" (Vist Number and mysterious X9 column)
+  TC=rbind.fill(subset(CarbonNotAssessed, PARAMETER_NAME=="Total Organic Carbon"), subset(CarbonAssessed, PARAMETER_NAME=="Total Organic Carbon"))
+  colnames(TC)[colnames(TC)=="RESULT"] <- "TC_Val" #Renaming column
+
+  #Nearly all data has a QA Code associated with it; the most common ones are J01, Q04, Q06, Q08
+  TC_QA=count(TC, 'QA_CODES')
+  TC_QA
+  
+```
+
+Site Information: Lat, Long, National Coastal Assessment Region Name 
+
+```{r}
+coastal2010_Site <- nars_data %>% 
+  filter(Survey == "Coastal 2010",
+         Indicator == "Site Information") %>%
+  pull(filename) 
+  SitePath=paste0("data/", coastal2010_Site)
+  SiteAssessed=read_csv(SitePath[1])
+  SiteNotAssessed=read_csv(SitePath[2])
+  
+```
+
+Description of Quality Assurance Codes
+
+```{r}
+
+coastal2010_QA <- nars_data %>% 
+  filter(Survey == "Coastal 2010",
+         Indicator == "All") %>%
+  pull(filename) 
+  QA=read_csv(paste0("data/", coastal2010_QA))
+ 
+  
+```
+
+Preliminary Data Exploration
+
+```{r}
+
+#Combining TN and TP data
+
+Coastal_NP=merge(TN, TP,by="UID") #Big messy dataset with redundant columns
+Coastal_NP$TN_molar=Coastal_NP$TN_Val/1000/14.01 #Calculating moles of N from mg N/L
+Coastal_NP$TP_molar=Coastal_NP$TP_Val/1000/30.97 #Calculating moles of P from mg P/L
+Coastal_NP$NP_molar=Coastal_NP$TN_molar/Coastal_NP$TP_molar #Calculating N:P molar ratio
+
+#Quantiles
+
+summary(Coastal_NP$TN_Val)
+summary(Coastal_NP$TP_Val)
+summary(Coastal_NP$NP_molar)
+
+#Histograms and Boxplots of Nutrients and Ratio
+par(mfrow=c(3,2))
+hist(Coastal_NP$TN_Val, main="Coastal TN mg N/L")
+boxplot(Coastal_NP$TN_Val, main="Coastal TN mg N/L")
+hist(Coastal_NP$TP_Val, main="Coastal TP mg P/L")
+boxplot(Coastal_NP$TP_Val, main="Coastal TP mg P/L")
+hist(Coastal_NP$NP_molar, main="Coastal NP molar ratio")
+boxplot(Coastal_NP$NP_molar, main="Coastal NP molar ratio")
+
+par(mfrow=c(1,1))
+plot(Coastal_NP$TN_molar, Coastal_NP$TP_molar, main="TP vs. TN")
+
+```
+
