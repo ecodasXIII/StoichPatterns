@@ -46,5 +46,7 @@ TP is in ug P/L
 
 **Lakes 2012**
 
-
+* Water Chemistry_1 - UID, SITE_ID, DATE_COL, TEMPERATURE
+* Water Chemistry_2 - UID, DOC_QA_FLAG, DOC_RESULT, NTL_QA_FLAG, NTL_RESULT, PTL_RESULT, TOC_RESULTS
+* Site Information - UID, SITE_ID, DATE_COL, LAT_DD83, LON_DD83
 

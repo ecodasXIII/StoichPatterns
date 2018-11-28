@@ -14,6 +14,10 @@ library(purrr)
 library(fs)
 ```
 
+````{r create local folder, message = F}
+ifelse(!dir.exists(file.path(getwd(), "/raw-data")), dir.create(file.path(getwd(), "/raw-data")), FALSE)
+```
+
 Read in the csv table created with `get_nars_links.R`. 
 
 ```{r}
@@ -25,7 +29,7 @@ Download all the csv files in the data links column into a folder called data (n
 
 ```{r}
 map2(.x = nars_data$data_link,
-     .y = file.path("data", basename(nars_data$data_link)), 
+     .y = file.path("raw-data", basename(nars_data$data_link)), 
      ~download.file(.x, .y))
 ```
 

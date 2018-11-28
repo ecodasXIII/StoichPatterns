@@ -1,0 +1,61 @@
+---
+title: "Lakes 2012 nars data"
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Survey names
+```{r}
+nars_data %>% pull(Survey) %>% unique()
+```
+
+```{r}
+nars_data %>% 
+  filter(Survey == "Lakes 2012") %>%
+  pull(Indicator) %>% unique()
+```
+
+water chemistry data (DOC, TN, and TP). 2 files for chemistry - site data and actual chemistry
+
+```{r}
+lakes2012_wc1 <- nars_data %>% 
+  filter(Survey == "Lakes 2012",
+         Indicator == "Water Chemistry") %>%
+  pull(filename) %>% '[[' (1) %>% # metadata 
+  paste0("raw-data/", .) %>%
+  read_csv()
+lakes2012_wc2 <- nars_data %>% 
+  filter(Survey == "Lakes 2012",
+         Indicator == "Water Chemistry") %>%
+  pull(filename) %>% '[[' (2) %>% # chemistry data 
+  paste0("raw-data/", .) %>%
+  read_csv()
+```
+
+```{r}
+names(lakes2012_wc2)
+```
+
+```{r}
+lakevars <- c("UID", "SITE_ID", "DATE_COL", "DOC_RESULT", "DOC_QA_FLAG", "NTL_RESULT", "NTL_QA_FLAG", "PTL_RESULT", "PTL_QA_FLAG")
+```
+
+```{r}
+lakes2012_CNP <- dplyr::select(lakes2012_wc2, lakevars)
+```
+
+Convert date column to real date
+
+```{r}
+lakes2012_CNP <- lakes2012_CNP %>%
+  mutate(date_formatted = as.Date(DATE_COL, format = "%d-%b-%y")) 
+```
+
+
+
