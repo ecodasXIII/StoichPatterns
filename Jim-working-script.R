@@ -48,21 +48,40 @@ lakes2012_site = nars_data %>%
          Indicator == "Site Information") %>%
   pull(filename) %>% paste0("raw-data/",.) %>% read_csv()
 
-#This unzips shapefile & data for lake basins.
-lakes2012_landscape1= nars_data %>% #this is GIS file (Shapes, etc.)
-  filter(Survey == "Lakes 2012",
-         Indicator == "Landscape Data") %>%
-  pull(filename) %>% '[[' (1) %>% #this is sample points and polys
-  paste0("raw-data/",.) %>% unzip()
-lakes2012_landscape2= nars_data %>% #this is GIS file (Shapes, etc.)
-  filter(Survey == "Lakes 2012",
-         Indicator == "Landscape Data") %>%
-  pull(filename) %>% '[[' (2) %>% #this is lake basin poly
-  paste0("raw-data/",.) %>% unzip() 
+# #This unzips shapefile & data for lake basins.
+# lakes2012_landscape1= nars_data %>% #this is GIS file (Shapes, etc.)
+#   filter(Survey == "Lakes 2012",
+#          Indicator == "Landscape Data") %>%
+#   pull(filename) %>% '[[' (1) %>% #this is sample points and polys
+#   paste0("raw-data/",.) %>% unzip()
+# lakes2012_landscape2= nars_data %>% #this is GIS file (Shapes, etc.)
+#   filter(Survey == "Lakes 2012",
+#          Indicator == "Landscape Data") %>%
+#   pull(filename) %>% '[[' (2) %>% #this is lake basin poly
+#   paste0("raw-data/",.) %>% unzip() 
 
 #### Working with nlcd data to pull lat-longs #####
 ## modified from Kelly's nlcd_feddata.Rmd ##
+#read in lake shapefiles
+basin_shapes = read_sf(dsn = "./raw-data", layer = "Lake_Basins") %>%
+  st_transform(crs = 4269)#convert to NAD83 projection
 
+plot(basin_shapes$geometry)
+
+basin_shapes_ex<- basin_shapes[1:10,]
+
+leaflet(basin_shapes_ex) %>%
+  addProviderTiles(providers$Esri.WorldImagery) %>%
+  addPolygons()
+
+#source the lake nlcd function to extract landcover of watersheds
+source("./functions/lake_nlcd_function.R")
+
+#run on subset of lakes
+ten_lakes = list()
+tic();for(i in seq_along(lake_buffers_ex[[1]]))ten_lakes[[i]] <- get_nlcd_percents(lake_buffers_ex[i,]);toc()
+names(ten_lakes) <- basin_shapes_ex$NLA12_ID
+ten_lakes[[1]]
 
 #the projection is NAD83 EPSG code (for crs = ) == 4269
 #WSG 84 = 4326
@@ -130,30 +149,8 @@ raster::freq(nlcd_nars_mask) %>%
 ## Define function to do all of the above --get percent of land cover types
 # within polygon. Returns polygon with columns class_name and percent cover
 
-get_nlcd_percents <- function(aoi, nlcd_year = "2011"){
-  aoi_sp <- as(aoi, "Spatial");crs(aoi_sp) <- CRS("+proj=longlat +epsg=4269")
-  nlcd_nars <- FedData::get_nlcd(aoi_sp, label = "aoi",
-                                 dataset = "landcover",
-                                 year = nlcd_year,
-                                 force.redo = TRUE)
-  aoi_prj <- st_transform(aoi_sp, crs = proj4string(nlcd_nars))
-  nlcd_nars_mask <- raster::mask(nlcd_nars, as(aoi_prj, "Spatial"))
-  
-  lc_legend_df <- readr::read_csv("nlcd_legend_2011.csv")
-  
-  cover <- raster::freq(nlcd_nars_mask) %>%
-    as.data.frame() %>%
-    dplyr::filter(!is.na(value)) %>%
-    dplyr::left_join(lc_legend_df, by = c("value" = "Class")) %>%
-    dplyr::mutate(percent_cover = count/sum(count)) %>%
-    dplyr::select(class_name, percent_cover)
-  
-  return(cover)
-}
 # this works for a single one now iterate across a subset of rows in lakes_loc
 #automate the buffer getting for a subset of lakes
-# got help from here: https://stackoverflow.com/questions/48505551/use-apply-with-a-simple-features-sf-function
-
 
 lakes_loc_ex <- lakes2012_site[1:10,]  %>%
   st_as_sf(coords = c("LON_DD83","LAT_DD83"), crs = 4269)
@@ -161,13 +158,23 @@ lakes_loc_ex <- lakes2012_site[1:10,]  %>%
 lakes_buffer <- lakes_loc_ex %>%
   st_buffer(0.01)
 
-debugonce(get_nlcd_percents)
-ten_lakes = lapply(st_geometry(lakes_buffer),1, FUN = get_nlcd_percents)
+ten_lakes = list()
+tic();for(i in seq_along(lakes_buffer[[1]]))ten_lakes[[i]] <- get_nlcd_percents(lakes_buffer[i,]);toc()
+# for loop works, but likely slow. Prefer to use apply-group. Working on that
+# got help from here: https://stackoverflow.com/questions/48505551/use-apply-with-a-simple-features-sf-function
 
-ten_lakes = get_nlcd_percents(lakes_buffer)
-crs(lakes_buffer)
-install.packages('raster')
-  
+debugonce(get_nlcd_percents)
+ten_lakes = lapply(st_geometry(lakes_buffer), FUN = get_nlcd_percents)
+
+##need to work out why getting error "Error in st_sfc(x, crs = attr(x, "proj4string")) : 
+#is.numeric(crs) || is.character(crs) || inherits(crs, "crs") is not TRUE"
+
+crs(lakes_buffer)#;crs(lakes_buffer)<-CRS("+proj=longlat +epsg=4269")
+as(lakes_buffer, 'Spatial') 
+st_geometry(lakes_buffer)
+as(st_geometry(lakes_buffer),'Spatial')
+crs(as(st_geometry(lakes_buffer),'Spatial')) <-CRS("+proj=longlat +epsg=4269")
+####
   ######## Code for other ecosystems #######
 
 nars_data %>% 
