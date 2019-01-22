@@ -4,6 +4,7 @@ library(sf)
 library(leaflet)
 library(readr)
 library(tidyverse)
+library(tictoc)
 # run once to download all the data locally to './raw-data/' folder
 # which is ignored for pushing purposes so csvs are not kept remotely
 # just locally
@@ -49,40 +50,55 @@ lakes2012_site = nars_data %>%
   pull(filename) %>% paste0("raw-data/",.) %>% read_csv()
 
 # #This unzips shapefile & data for lake basins.
-# lakes2012_landscape1= nars_data %>% #this is GIS file (Shapes, etc.)
-#   filter(Survey == "Lakes 2012",
-#          Indicator == "Landscape Data") %>%
-#   pull(filename) %>% '[[' (1) %>% #this is sample points and polys
-#   paste0("raw-data/",.) %>% unzip()
-# lakes2012_landscape2= nars_data %>% #this is GIS file (Shapes, etc.)
-#   filter(Survey == "Lakes 2012",
-#          Indicator == "Landscape Data") %>%
-#   pull(filename) %>% '[[' (2) %>% #this is lake basin poly
-#   paste0("raw-data/",.) %>% unzip() 
+lakes2012_landscape1= nars_data %>% #this is GIS file (Shapes, etc.)
+  filter(Survey == "Lakes 2012",
+         Indicator == "Landscape Data") %>%
+  pull(filename) %>% '[[' (1) %>% #this is sample points and polys
+  unzip(exdir = './raw-data')
+lakes2012_landscape2= nars_data %>% #this is GIS file (Shapes, etc.)
+  filter(Survey == "Lakes 2012",
+         Indicator == "Landscape Data") %>%
+  pull(filename) %>% '[[' (2) %>% #this is lake basin poly
+  unzip(exdir = "./raw-data")
 
 #### Working with nlcd data to pull lat-longs #####
 ## modified from Kelly's nlcd_feddata.Rmd ##
-#read in lake shapefiles
+# read in lake shapefiles
 basin_shapes = read_sf(dsn = "./raw-data", layer = "Lake_Basins") %>%
   st_transform(crs = 4269)#convert to NAD83 projection
 
-plot(basin_shapes$geometry)
+#plot(basin_shapes$geometry)
 
+#subset a few basins to try pulling land cover data
 basin_shapes_ex<- basin_shapes[1:10,]
 
-leaflet(basin_shapes_ex) %>%
+leaflet(basin_shapes_ex) %>%#view the subset of 
   addProviderTiles(providers$Esri.WorldImagery) %>%
   addPolygons()
 
 #source the lake nlcd function to extract landcover of watersheds
 source("./functions/lake_nlcd_function.R")
 
-#run on subset of lakes
+#run on subset of lakes basin_shapes_ex <- basin_shapes[1:10,]
+# works but takes a while ~13 secs per lake.
 ten_lakes = list()
-tic();for(i in seq_along(lake_buffers_ex[[1]]))ten_lakes[[i]] <- get_nlcd_percents(lake_buffers_ex[i,]);toc()
+#debugonce(get_nlcd_percents)
+tic();for(i in seq_along(basin_shapes_ex[[1]]))ten_lakes[[i]] <- get_nlcd_percents(basin_shapes_ex[i,]);toc()
 names(ten_lakes) <- basin_shapes_ex$NLA12_ID
-ten_lakes[[1]]
 
+ten_lakes[[1]]#View the first lake example
+
+
+#attempt to speed it with lapply functions.
+
+ten_lakes = list()
+debugonce(get_nlcd_percents)
+tic();ten_lakes = apply(basin_shapes_ex, 1, FUN = get_nlcd_percents);toc()
+
+##need to work out why getting error "Error in st_sfc(x, crs = attr(x, "proj4string")) : 
+#is.numeric(crs) || is.character(crs) || inherits(crs, "crs") is not TRUE"
+as(basin_shapes_ex[1,], "Spatial")
+as(list(basin_shapes_ex[1,]), "Spatial")
 #the projection is NAD83 EPSG code (for crs = ) == 4269
 #WSG 84 = 4326
 
@@ -163,6 +179,7 @@ tic();for(i in seq_along(lakes_buffer[[1]]))ten_lakes[[i]] <- get_nlcd_percents(
 # for loop works, but likely slow. Prefer to use apply-group. Working on that
 # got help from here: https://stackoverflow.com/questions/48505551/use-apply-with-a-simple-features-sf-function
 
+
 debugonce(get_nlcd_percents)
 ten_lakes = lapply(st_geometry(lakes_buffer), FUN = get_nlcd_percents)
 
@@ -204,8 +221,20 @@ w2011_carbon <- nars_data %>%
 rivers2008_wc <- nars_data %>% 
   filter(Survey == "Rivers and Streams 2008-2009",
          Indicator == "Water Chemistry") %>%
-  pull(filename) %>% 
-  head(1) %>% # because there are 2 files.. 
-  paste0("data/", .) %>%
+  pull(filename)  %>% '[[' (2)# because there are 2 files.. 
+  paste0("raw-data/", .) %>%
   read_csv()
+  
+nars_data %>%
+  filter(Survey == "Rivers and Streams 2008-2009",
+         Indicator == "Benthic Macroinvertebrates") %>%
+  pull(filename) %>% unique()
+  
+rivers2008_benth.inv <- nars_data %>%
+  filter(Survey == "Rivers and Streams 2008-2009",
+         Indicator == "Benthic Macroinvertebrates") %>%
+  pull(filename) %>% '[[' (5) %>%
+  paste0("raw-data/",.) %>%
+  read.csv
+  
 ########### End other system code ##################

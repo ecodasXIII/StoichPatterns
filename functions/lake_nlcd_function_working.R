@@ -1,5 +1,7 @@
 get_nlcd_percents <- function(aoi, nlcd_year = "2011"){
   aoi_sp <- as(aoi, "Spatial")
+  #;crs(aoi_sp) <- CRS("+proj=longlat +epsg=4269")
+  #print(crs(aoi_sp));print(crs(aoi))
   nlcd_nars <- FedData::get_nlcd(aoi_sp, label = "aoi",
                                  dataset = "landcover",
                                  year = nlcd_year,
