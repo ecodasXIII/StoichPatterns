@@ -8,7 +8,12 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(plyr)
 library(dplyr)
+library(readr)
+
+nars_data <- read_csv("data/nars_data_table.csv")
+nars_data$filename <- basename(nars_data$data_link)
 ```
 
 ```{r}
@@ -67,7 +72,7 @@ coastal2010_carbon <- nars_data %>%
   CarbonNotAssessed=read_csv(CarbonPath[2])
   
   #Combining sites that were assessed vs. not assessed for the condition report
-  #Two extra columns in "not assessed" (Vist Number and mysterious X9 column)
+  #Two extra columns in "not assessed" (Visit Number and mysterious X9 column)
   TC=rbind.fill(subset(CarbonNotAssessed, PARAMETER_NAME=="Total Organic Carbon"), subset(CarbonAssessed, PARAMETER_NAME=="Total Organic Carbon"))
   colnames(TC)[colnames(TC)=="RESULT"] <- "TC_Val" #Renaming column
 
