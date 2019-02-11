@@ -1,21 +1,40 @@
-library(FedData)
-library(raster)
-library(sf)
-library(leaflet)
-library(readr)
-library(tidyverse)
-library(tictoc)
-# run once to download all the data locally to './raw-data/' folder
+load_packages = function() {
+if(!require("pacman")) install.packages("pacman")
+library(pacman)
+package.list = c("FedData","raster","sf","leaflet",
+                 "readr","tidyverse","tictoc","fs",
+                 "furrr")
+p_load(char = package.list, install = T)
+rm('package.list')
+}
+load_packages()
+# run local_data_load() once to download all the data locally to './raw-data/' folder
 # which is ignored for pushing purposes so csvs are not kept remotely
 # just locally
-
+local_data_download = function(){
+#from:
 #source("./data-download.Rmd")
+  #create local folder
+  ifelse(!dir.exists(file.path(getwd(), "/raw-data")), dir.create(file.path(getwd(), "/raw-data")), FALSE)
+  
+#Read in the csv table created with `get_nars_links.R`. 
+  
+  nars_data <- read_csv("data/nars_data_table.csv")
+  nars_data$filename <- basename(nars_data$data_link)
+  
+  #Download all the csv files in the data links column into a folder called "raw-data" (needs to exist first)
+  map2(.x = nars_data$data_link,
+       .y = file.path("raw-data", basename(nars_data$data_link)), 
+       ~download.file(.x, .y))
+}
+local_data_download()
+  
 ####
-nars_data = read_csv("data/nars_data_table.csv");nars_data$filename <- basename(nars_data$data_link)
-#####
-#check the data surveys available
-nars_data %>%
-  pull(Survey) %>% unique()
+ nars_data = read_csv("data/nars_data_table.csv");nars_data$filename <- basename(nars_data$data_link)
+# #####
+# #check the data surveys available
+# nars_data %>%
+#   pull(Survey) %>% unique()
 
 ### Lakes data
 #check the indicator data available
