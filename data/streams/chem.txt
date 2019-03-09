@@ -1,0 +1,32 @@
+VARIABLE	DESCRIPTION	SAMPLE_TYPE	UNITS	RANGE_LOW	RANGE_HIGH	LEGAL_VALUES
+AL	Total Dissolved Aluminum	CHEMW	mg/L			
+ANC	Acid Neutralizing Capcity	CHEMW	ueq/L			
+CA	Calicum	CHEMW	mg/L			
+CL	Chloride	CHEMW	mg/L			
+COLOR	Color	CHEMW	APHA Pt-Co Units			
+COND	Specific Conductance	CHEMW	uS/cm			
+DATE_COL	Date of field collection					
+DOC	Dissolved Organic Carbon	CHEMW	mg/L			
+K	Potassium	CHEMW	mg/L			
+MG	Magnesium	CHEMW	mg/L			
+NH4	Ammonia as Nitrogen	CHEMW	mg/L			
+NO2	Nitrite as Nitrogen	CHEMW	mg N/L			
+NO3	Nitrate as Nitrogen	CHEMW	mg N/L			
+NO3NO2	Nitrate-Nitrite as Nitrogen	CHEMW	mgN/L			
+NTL	Total Nitrogen	CHEMW	ug/L			
+PHLAB	Laboratory measured pH	CHEMW				
+PTL	Total Phosphorus	CHEMW	ug/L			
+SAM_CODE	Sample code (Regular/Lab duplicate/Lab split)					
+SAMPLE_CAT	Sample category (Primary/Duplicate/Filter blank)					
+SAMPLE_TYPE	Sample type					
+SIO2	Silica	CHEMW	mg/L			
+SITE_ID	Site identification code					
+SO4	Sulfate	CHEMW	mg/L			
+SODIUM	Sodium	CHEMW	mg/L			
+TSS	Total Suspended Solids	CHEMW	mg/L			
+TURB	Turbidity	CHEMW	NTU			
+UID	Unique site visit ID					
+VISIT_NO	Visit number for that year					
+YEAR	Sampling year					
+ALERT	"R-Value below reporting limit for parameter,S-Sample shipping time exceeded two day limit,H-Holding time of sample exceeded parameter-specific limit"	CHEMB				H|R|S
+ALERT	"R-Value below reporting limit for parameter,S-Sample shipping time exceeded two day limit,H-Holding time of sample exceeded parameter-specific limit"	CHEMW				H|R|S
