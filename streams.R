@@ -1,5 +1,7 @@
 ##### Streams and Rivers 2008/9 ####
-pacman::p_load(tidyverse)
+pacman::p_load(FedData, fs, furrr, leaflet, raster, tictoc)
+library(sf)
+library(tidyverse)
 
 # Full set of NARS data files
 nars_data <- read_csv("data/nars_data_table.csv") %>%
@@ -21,8 +23,8 @@ cnp <- chem %>%
 
 # write_csv(chem, './data/streams/cnp_chem.csv')
 
-#### PRISM daily/annual temp/precip ####
-prism <- read_csv('./data/streams/site_info_PRISM.csv')
+#### Site info w/ PRISM daily/annual temp/precip ####
+siteinfo <- read_csv('./data/streams/site_info_PRISM.csv')
 
 #### Landscape data ####
 landscape_all <- nars_data %>% 
@@ -35,3 +37,39 @@ landscape_all <- nars_data %>%
 # Select focal landscape variables (temperatures, land cover)
 landscape <- landscape_all %>%
   select(UID, SITE_ID, TMAX_ANN:TMIN_JUL, PCT_AG:PCT_SHRUB_GRASS, NHDWAT_PCT_IMPERV)
+
+#### LANDSCAPE FROM SHAPEFILES ####
+# unzip shapefile & data for lake basins.
+sr_landscape2 <- unzip(zipfile = './data/nrsa0809_watersheds.zip', 
+        exdir = "./stream_watersheds_data")
+
+# read in lake shapefiles
+basin_shapes = read_sf(dsn = "./stream_watersheds_data", layer = "NRSA0809_Watersheds") %>%
+  st_transform(crs = 4269) # convert to NAD83 projection
+
+#subset a few basins to try pulling land cover data
+basin_shapes_ex <- basin_shapes[1:10,]
+
+#leaflet(basin_shapes_ex) %>% #view the subset of 
+#  addProviderTiles(providers$Esri.WorldImagery) %>%
+#  addPolygons()
+
+#source the stream nlcd function to extract landcover of watersheds
+source("./stream_nlcd_function.R")
+
+#run on subset of basin_shapes_ex <- basin_shapes[1:10,]
+
+#ten_streams = list()
+
+#tic();for(i in seq_along(basin_shapes_ex[[1]]))
+#  ten_streams[[i]] <- get_nlcd_percents(basin_shapes_ex[i,]);toc()
+#names(ten_streams) <- basin_shapes_ex$SITE_ID
+
+#ten_streams[[1]] #View the first stream example
+
+## Run all watersheds ####
+all_streams = list()
+
+for(i in seq_along(basin_shapes[[1]]))
+  all_streams[[i]] <- get_nlcd_percents(basin_shapes[i,])
+names(all_streams) <- basin_shapes$SITE_ID
