@@ -1,34 +1,11 @@
-load_packages = function() {
-if(!require("pacman")) install.packages("pacman")
-library(pacman)
-package.list = c("FedData","raster","sf","leaflet",
-                 "readr","tidyverse","tictoc","fs",
-                 "furrr")
-p_load(char = package.list, install = T)
-rm('package.list')
-}
-load_packages()
+source("./functions/load_packages_function.R")
+
 # run local_data_load() once to download all the data locally to './raw-data/' folder
 # which is ignored for pushing purposes so csvs are not kept remotely
 # just locally
-local_data_download = function(){
-#from:
-#source("./data-download.Rmd")
-  #create local folder
-  ifelse(!dir.exists(file.path(getwd(), "/raw-data")), dir.create(file.path(getwd(), "/raw-data")), FALSE)
-  
-#Read in the csv table created with `get_nars_links.R`. 
-  
-  nars_data <- read_csv("data/nars_data_table.csv")
-  nars_data$filename <- basename(nars_data$data_link)
-  
-  #Download all the csv files in the data links column into a folder called "raw-data" (needs to exist first)
-  map2(.x = nars_data$data_link,
-       .y = file.path("raw-data", basename(nars_data$data_link)), 
-       ~download.file(.x, .y))
-}
-local_data_download()
-  
+# source("./functions/local_data_download_function.R")
+# source("./ecosystem_functions/lakes_local_download_function.R")
+
 ####
  nars_data = read_csv("data/nars_data_table.csv");nars_data$filename <- basename(nars_data$data_link)
 # #####
@@ -68,51 +45,81 @@ lakes2012_site = nars_data %>%
          Indicator == "Site Information") %>%
   pull(filename) %>% paste0("raw-data/",.) %>% read_csv()
 
-# #This unzips shapefile & data for lake basins.
-lakes2012_landscape1= nars_data %>% #this is GIS file (Shapes, etc.)
-  filter(Survey == "Lakes 2012",
-         Indicator == "Landscape Data") %>%
-  pull(filename) %>% '[[' (1) %>% #this is sample points and polys
-  unzip(exdir = './raw-data')
-lakes2012_landscape2= nars_data %>% #this is GIS file (Shapes, etc.)
-  filter(Survey == "Lakes 2012",
-         Indicator == "Landscape Data") %>%
-  pull(filename) %>% '[[' (2) %>% #this is lake basin poly
-  unzip(exdir = "./raw-data")
-
 #### Working with nlcd data to pull lat-longs #####
 ## modified from Kelly's nlcd_feddata.Rmd ##
 # read in lake shapefiles
 basin_shapes = read_sf(dsn = "./raw-data", layer = "Lake_Basins") %>%
   st_transform(crs = 4269)#convert to NAD83 projection
+basin_shapes_big = basin_shapes %>% filter(AreaSqKM >= 100000)
 
+basin_shapes = basin_shapes %>% filter(AreaSqKM <= 100000)
 #plot(basin_shapes$geometry)
 
 #subset a few basins to try pulling land cover data
-basin_shapes_ex<- basin_shapes[1:10,]
+basin_shapes_ex<- basin_shapes[11:20,]
 
-leaflet(basin_shapes_ex) %>%#view the subset of 
+leaflet(basin_shapes_ex) %>% #view the subset of 
   addProviderTiles(providers$Esri.WorldImagery) %>%
   addPolygons()
 
 #source the lake nlcd function to extract landcover of watersheds
-source("./functions/lake_nlcd_function.R")
+source("./ecosystem_scripts/Lakes2012/functions/lake_nlcd_function.R")
 
 #run on subset of lakes basin_shapes_ex <- basin_shapes[1:10,]
-# works but takes a while ~13 secs per lake.
-ten_lakes = list()
-#debugonce(get_nlcd_percents)
-tic();for(i in seq_along(basin_shapes_ex[[1]]))ten_lakes[[i]] <- get_nlcd_percents(basin_shapes_ex[i,]);toc()
-names(ten_lakes) <- basin_shapes_ex$NLA12_ID
+# works but takes a while ~9 secs per lake.
+# ten_lakes = list()
+# #debugonce(get_nlcd_percents)
+# tic();for(i in seq_along(basin_shapes_ex[[1]]))ten_lakes[[i]] <- get_nlcd_percents(basin_shapes_ex[i,]);toc()
+# names(ten_lakes) <- basin_shapes_ex$NLA12_ID
+# 
+# ten_lakes[[1]]#View the first lake example
+# sum(ten_lakes[[1]]$percent_cover)#check adds to one
 
-ten_lakes[[1]]#View the first lake example
+#full run
+#need to break the list into parts because large vectors on some (~900MB!!)
+#1
+basin_shapes1 = basin_shapes[c(1:466),]
+lakes_landuse1 = list()
+tic();for(i in seq_along(basin_shapes[[1]]))lakes_landuse1[[i]] <- get_nlcd_percents(basin_shapes[i,]);toc()
+names(lakes_landuse1) <- basin_shapes1$NLA12_ID
+saveRDS(lakes_landuse1, file = "./ecosystem_scripts/Lakes2012/01_lakes_landuse_list.rds")
+###
+basin_shapes467 = basin_shapes[467,]
+lakes_landuse467 = list()
+tic();for(i in seq_along(basin_shapes467[[1]]))lakes_landuse467[[i]] <- get_nlcd_percents(basin_shapes467[i,]);toc()
+names(lakes_landuse467) <- basin_shapes467$NLA12_ID
+saveRDS(lakes_landuse467, file = "./ecosystem_scripts/Lakes2012/467_lakes_landuse_list.rds")
+####
+#2
+basin_shapes2 = basin_shapes[c(468:700),]
+lakes_landuse2 = list()
+tic();for(i in seq_along(basin_shapes2[[1]]))lakes_landuse2[[i]] <- get_nlcd_percents(basin_shapes2[i,]);toc()
+names(lakes_landuse2) <- basin_shapes2$NLA12_ID
+saveRDS(lakes_landuse2, file = "./ecosystem_scripts/Lakes2012/02_lakes_landuse_list.rds")
+#3
+basin_shapes3 = basin_shapes[c(701:1000),]
+lakes_landuse3 = list()
+tic();for(i in seq_along(basin_shapes3[[1]]))lakes_landuse3[[i]] <- get_nlcd_percents(basin_shapes3[i,]);toc()
+names(lakes_landuse3) <- basin_shapes3$NLA12_ID
+saveRDS(lakes_landuse3, file = "./ecosystem_scripts/Lakes2012/03_lakes_landuse_list.rds")
+#4
+basin_shapes4 = basin_shapes[c(1001:1500),]
+lakes_landuse4 = list()
+tic();for(i in seq_along(basin_shapes4[[1]]))lakes_landuse4[[i]] <- get_nlcd_percents(basin_shapes4[i,]);toc()
+names(lakes_landuse4) <- basin_shapes4$NLA12_ID
+saveRDS(lakes_landuse4, file = "./ecosystem_scripts/Lakes2012/04_lakes_landuse_list.rds")
+#5
+basin_shapes5 = basin_shapes[c(1501:1714),]
+lakes_landuse5 = list()
+tic();for(i in seq_along(basin_shapes5[[1]]))lakes_landuse5[[i]] <- get_nlcd_percents(basin_shapes5[i,]);toc()
+names(lakes_landuse5) <- basin_shapes5$NLA12_ID
+saveRDS(lakes_landuse5, file = "./ecosystem_scripts/Lakes2012/05_lakes_landuse_list.rds")
 
-
+#saveRDS(lakes_landuse, file = "./ecosystem_scripts/Lakes2012/lake_landuse_list.rds")
 #attempt to speed it with lapply functions.
-
 ten_lakes = list()
 debugonce(get_nlcd_percents)
-tic();ten_lakes = apply(basin_shapes_ex, 1, FUN = get_nlcd_percents);toc()
+tic();ten_lakes = map_dfr(basin_shapes_ex, get_nlcd_percents);toc()
 
 ##need to work out why getting error "Error in st_sfc(x, crs = attr(x, "proj4string")) : 
 #is.numeric(crs) || is.character(crs) || inherits(crs, "crs") is not TRUE"
