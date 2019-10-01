@@ -52,11 +52,11 @@ basin_shapes = read_sf(dsn = "./raw-data", layer = "Lake_Basins") %>%
   st_transform(crs = 4269)#convert to NAD83 projection
 basin_shapes_big = basin_shapes %>% filter(AreaSqKM >= 100000)
 
-basin_shapes = basin_shapes %>% filter(AreaSqKM <= 100000)
+basin_shapes_small = basin_shapes %>% filter(AreaSqKM <= 100000)
 #plot(basin_shapes$geometry)
 
 #subset a few basins to try pulling land cover data
-basin_shapes_ex<- basin_shapes[11:20,]
+basin_shapes_ex<- basin_shapes_small[1:10,]
 
 leaflet(basin_shapes_ex) %>% #view the subset of 
   addProviderTiles(providers$Esri.WorldImagery) %>%
@@ -83,6 +83,7 @@ lakes_landuse1 = list()
 tic();for(i in seq_along(basin_shapes[[1]]))lakes_landuse1[[i]] <- get_nlcd_percents(basin_shapes[i,]);toc()
 names(lakes_landuse1) <- basin_shapes1$NLA12_ID
 saveRDS(lakes_landuse1, file = "./ecosystem_scripts/Lakes2012/01_lakes_landuse_list.rds")
+lakes_landuse1 = readRDS(file = "./ecosystem_scripts/Lakes2012/01_lakes_landuse_list.rds")
 ###
 basin_shapes467 = basin_shapes[467,]
 lakes_landuse467 = list()
