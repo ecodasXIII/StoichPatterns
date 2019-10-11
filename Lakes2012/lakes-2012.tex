@@ -1,0 +1,306 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Lakes 2012 nars data},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{Lakes 2012 nars data}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{}
+    \preauthor{}\postauthor{}
+    \date{}
+    \predate{}\postdate{}
+  
+
+\begin{document}
+\maketitle
+
+Survey names
+
+\begin{verbatim}
+## [1] "Lakes 2007"                   "Streams 2004-2005"           
+## [3] "Coastal 1999-2001/2005-2006"  "Rivers and Streams 2008-2009"
+## [5] "Coastal 2010"                 "Wetlands 2011"               
+## [7] "Lakes 2012"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{nars_data }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{filter}\NormalTok{(Survey }\OperatorTok{==}\StringTok{ "Lakes 2012"}\NormalTok{) }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{pull}\NormalTok{(Indicator) }\OperatorTok{%>%}\StringTok{ }\KeywordTok{unique}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] "Algal Toxin"                "Atrazine"                  
+##  [3] "Benthic Macroinvertebrates" "Chlorophyll-a"             
+##  [5] "Physical Habitat"           "All"                       
+##  [7] "Landscape Data"             "Phytoplankton"             
+##  [9] "Water Chemistry"            "Secchi"                    
+## [11] "Sediment"                   "Site Information"          
+## [13] "Water Isotope Variables"    "Zooplankton"
+\end{verbatim}
+
+water chemistry data (DOC, TN, and TP). 2 files for chemistry - site
+data and actual chemistry
+
+lakes2012\_wc1 = H2O chem metadata\\
+lakes2012\_wc2 = H2O chem data
+
+\begin{verbatim}
+##   [1] "UID"                             "SAM_CODE"                       
+##   [3] "LAB"                             "ALUMINUM_BATCH_ID"              
+##   [5] "AMMONIA_N_BATCH_ID"              "ANC_BATCH_ID"                   
+##   [7] "CALCIUM_BATCH_ID"                "CHLORIDE_BATCH_ID"              
+##   [9] "COLOR_BATCH_ID"                  "COND_BATCH_ID"                  
+##  [11] "DOC_BATCH_ID"                    "MAGNESIUM_BATCH_ID"             
+##  [13] "NITRATE_N_BATCH_ID"              "NITRATE_NITRITE_N_BATCH_ID"     
+##  [15] "NITRITE_N_BATCH_ID"              "NTL_BATCH_ID"                   
+##  [17] "PH_BATCH_ID"                     "POTASSIUM_BATCH_ID"             
+##  [19] "PTL_BATCH_ID"                    "SILICA_BATCH_ID"                
+##  [21] "SODIUM_BATCH_ID"                 "SULFATE_BATCH_ID"               
+##  [23] "TOC_BATCH_ID"                    "TSS_BATCH_ID"                   
+##  [25] "TURB_BATCH_ID"                   "ALUMINUM_UNITS"                 
+##  [27] "AMMONIA_N_UNITS"                 "ANC_UNITS"                      
+##  [29] "CALCIUM_UNITS"                   "CHLORIDE_UNITS"                 
+##  [31] "COLOR_UNITS"                     "COND_UNITS"                     
+##  [33] "DOC_UNITS"                       "MAGNESIUM_UNITS"                
+##  [35] "NITRATE_N_UNITS"                 "NITRATE_NITRITE_N_UNITS"        
+##  [37] "NITRITE_N_UNITS"                 "NTL_UNITS"                      
+##  [39] "PH_UNITS"                        "POTASSIUM_UNITS"                
+##  [41] "PTL_UNITS"                       "SILICA_UNITS"                   
+##  [43] "SODIUM_UNITS"                    "SULFATE_UNITS"                  
+##  [45] "TOC_UNITS"                       "TSS_UNITS"                      
+##  [47] "TURB_UNITS"                      "ALUMINUM_DATE_ANALYZED"         
+##  [49] "ALUMINUM_HOLDING_TIME"           "ALUMINUM_LAB_FLAG"              
+##  [51] "ALUMINUM_LAB_SAMPLE_ID"          "ALUMINUM_MDL"                   
+##  [53] "ALUMINUM_QA_FLAG"                "ALUMINUM_RESULT"                
+##  [55] "ALUMINUM_RL"                     "AMMONIA_N_DATE_ANALYZED"        
+##  [57] "AMMONIA_N_HOLDING_TIME"          "AMMONIA_N_LAB_FLAG"             
+##  [59] "AMMONIA_N_LAB_SAMPLE_ID"         "AMMONIA_N_MDL"                  
+##  [61] "AMMONIA_N_QA_FLAG"               "AMMONIA_N_RESULT"               
+##  [63] "AMMONIA_N_RL"                    "ANC_DATE_ANALYZED"              
+##  [65] "ANC_HOLDING_TIME"                "ANC_LAB_FLAG"                   
+##  [67] "ANC_LAB_SAMPLE_ID"               "ANC_QA_FLAG"                    
+##  [69] "ANC_RESULT"                      "CALCIUM_DATE_ANALYZED"          
+##  [71] "CALCIUM_HOLDING_TIME"            "CALCIUM_LAB_FLAG"               
+##  [73] "CALCIUM_LAB_SAMPLE_ID"           "CALCIUM_MDL"                    
+##  [75] "CALCIUM_QA_FLAG"                 "CALCIUM_RESULT"                 
+##  [77] "CALCIUM_RL"                      "CHLORIDE_DATE_ANALYZED"         
+##  [79] "CHLORIDE_HOLDING_TIME"           "CHLORIDE_LAB_FLAG"              
+##  [81] "CHLORIDE_LAB_SAMPLE_ID"          "CHLORIDE_MDL"                   
+##  [83] "CHLORIDE_QA_FLAG"                "CHLORIDE_RESULT"                
+##  [85] "CHLORIDE_RL"                     "COLOR_DATE_ANALYZED"            
+##  [87] "COLOR_HOLDING_TIME"              "COLOR_LAB_FLAG"                 
+##  [89] "COLOR_LAB_SAMPLE_ID"             "COLOR_MDL"                      
+##  [91] "COLOR_QA_FLAG"                   "COLOR_RESULT"                   
+##  [93] "COLOR_RL"                        "COND_DATE_ANALYZED"             
+##  [95] "COND_HOLDING_TIME"               "COND_LAB_FLAG"                  
+##  [97] "COND_LAB_SAMPLE_ID"              "COND_MDL"                       
+##  [99] "COND_QA_FLAG"                    "COND_RESULT"                    
+## [101] "COND_RL"                         "DOC_DATE_ANALYZED"              
+## [103] "DOC_HOLDING_TIME"                "DOC_LAB_FLAG"                   
+## [105] "DOC_LAB_SAMPLE_ID"               "DOC_MDL"                        
+## [107] "DOC_QA_FLAG"                     "DOC_RESULT"                     
+## [109] "DOC_RL"                          "MAGNESIUM_DATE_ANALYZED"        
+## [111] "MAGNESIUM_HOLDING_TIME"          "MAGNESIUM_LAB_FLAG"             
+## [113] "MAGNESIUM_LAB_SAMPLE_ID"         "MAGNESIUM_MDL"                  
+## [115] "MAGNESIUM_QA_FLAG"               "MAGNESIUM_RESULT"               
+## [117] "MAGNESIUM_RL"                    "NITRATE_N_DATE_ANALYZED"        
+## [119] "NITRATE_N_HOLDING_TIME"          "NITRATE_N_LAB_FLAG"             
+## [121] "NITRATE_N_LAB_SAMPLE_ID"         "NITRATE_N_MDL"                  
+## [123] "NITRATE_N_QA_FLAG"               "NITRATE_N_RESULT"               
+## [125] "NITRATE_N_RL"                    "NITRATE_NITRITE_N_DATE_ANALYZED"
+## [127] "NITRATE_NITRITE_N_HOLDING_TIME"  "NITRATE_NITRITE_N_LAB_FLAG"     
+## [129] "NITRATE_NITRITE_N_LAB_SAMPLE_ID" "NITRATE_NITRITE_N_MDL"          
+## [131] "NITRATE_NITRITE_N_QA_FLAG"       "NITRATE_NITRITE_N_RESULT"       
+## [133] "NITRATE_NITRITE_N_RL"            "NITRITE_N_DATE_ANALYZED"        
+## [135] "NITRITE_N_HOLDING_TIME"          "NITRITE_N_LAB_FLAG"             
+## [137] "NITRITE_N_LAB_SAMPLE_ID"         "NITRITE_N_MDL"                  
+## [139] "NITRITE_N_QA_FLAG"               "NITRITE_N_RESULT"               
+## [141] "NITRITE_N_RL"                    "NTL_DATE_ANALYZED"              
+## [143] "NTL_HOLDING_TIME"                "NTL_LAB_FLAG"                   
+## [145] "NTL_LAB_SAMPLE_ID"               "NTL_MDL"                        
+## [147] "NTL_QA_FLAG"                     "NTL_RESULT"                     
+## [149] "NTL_RL"                          "PH_DATE_ANALYZED"               
+## [151] "PH_HOLDING_TIME"                 "PH_LAB_FLAG"                    
+## [153] "PH_LAB_SAMPLE_ID"                "PH_QA_FLAG"                     
+## [155] "PH_RESULT"                       "POTASSIUM_DATE_ANALYZED"        
+## [157] "POTASSIUM_HOLDING_TIME"          "POTASSIUM_LAB_FLAG"             
+## [159] "POTASSIUM_LAB_SAMPLE_ID"         "POTASSIUM_MDL"                  
+## [161] "POTASSIUM_QA_FLAG"               "POTASSIUM_RESULT"               
+## [163] "POTASSIUM_RL"                    "PTL_DATE_ANALYZED"              
+## [165] "PTL_HOLDING_TIME"                "PTL_LAB_FLAG"                   
+## [167] "PTL_LAB_SAMPLE_ID"               "PTL_MDL"                        
+## [169] "PTL_QA_FLAG"                     "PTL_RESULT"                     
+## [171] "PTL_RL"                          "SILICA_DATE_ANALYZED"           
+## [173] "SILICA_HOLDING_TIME"             "SILICA_LAB_FLAG"                
+## [175] "SILICA_LAB_SAMPLE_ID"            "SILICA_MDL"                     
+## [177] "SILICA_QA_FLAG"                  "SILICA_RESULT"                  
+## [179] "SILICA_RL"                       "SODIUM_DATE_ANALYZED"           
+## [181] "SODIUM_HOLDING_TIME"             "SODIUM_LAB_SAMPLE_ID"           
+## [183] "SODIUM_MDL"                      "SODIUM_QA_FLAG"                 
+## [185] "SODIUM_RESULT"                   "SODIUM_RL"                      
+## [187] "SULFATE_DATE_ANALYZED"           "SULFATE_HOLDING_TIME"           
+## [189] "SULFATE_LAB_FLAG"                "SULFATE_LAB_SAMPLE_ID"          
+## [191] "SULFATE_MDL"                     "SULFATE_QA_FLAG"                
+## [193] "SULFATE_RESULT"                  "SULFATE_RL"                     
+## [195] "TOC_HOLDING_TIME"                "TOC_RESULT"                     
+## [197] "TSS_DATE_ANALYZED"               "TSS_HOLDING_TIME"               
+## [199] "TSS_LAB_SAMPLE_ID"               "TSS_MDL"                        
+## [201] "TSS_QA_FLAG"                     "TSS_RESULT"                     
+## [203] "TSS_RL"                          "TURB_DATE_ANALYZED"             
+## [205] "TURB_HOLDING_TIME"               "TURB_LAB_FLAG"                  
+## [207] "TURB_LAB_SAMPLE_ID"              "TURB_MDL"                       
+## [209] "TURB_QA_FLAG"                    "TURB_RESULT"                    
+## [211] "TURB_RL"                         "ANC_FLAG"                       
+## [213] "CALCIUM_FLAG"                    "CHLORIDE_FLAG"                  
+## [215] "COLOR_FLAG"                      "COND_FLAG"                      
+## [217] "DOC_FLAG"                        "MAGNESIUM_FLAG"                 
+## [219] "NITRATE_N_FLAG"                  "NITRATE_NITRITE_N_FLAG"         
+## [221] "NTL_FLAG"                        "PH_FLAG"                        
+## [223] "POTASSIUM_FLAG"                  "PTL_FLAG"                       
+## [225] "SILICA_FLAG"                     "SODIUM_FLAG"                    
+## [227] "SULFATE_FLAG"                    "TSS_FLAG"                       
+## [229] "TURB_FLAG"                       "CHEM_SAMPLE_ID"                 
+## [231] "CHEM_SHIP_FLAG"                  "NUTS_SAMPLE_ID"                 
+## [233] "NUTS_SHIP_FLAG"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lakevars <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"UID"}\NormalTok{, }\StringTok{"SITE_ID"}\NormalTok{, }\StringTok{"DATE_COL"}\NormalTok{, }\StringTok{"DOC_RESULT"}\NormalTok{, }\StringTok{"DOC_QA_FLAG"}\NormalTok{, }\StringTok{"NTL_RESULT"}\NormalTok{, }\StringTok{"NTL_QA_FLAG"}\NormalTok{, }\StringTok{"PTL_RESULT"}\NormalTok{, }\StringTok{"PTL_QA_FLAG"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Grab the follow variables:
+
+-UID -\textgreater{} unique ID\\
+-SITE\_ID -\textgreater{} site ID\\
+-DATE\_COL -\textgreater{} date collected\\
+-DOC\_RESULT -\textgreater{} DOC measurement mg/L\\
+-DOC\_QA\_FLAG -\textgreater{} DOC QA/QC flag\\
+-NTL\_RESULT -\textgreater{} total N result mg/L\\
+-NTL\_QA\_FLAG -\textgreater{} total N QA/QC flag\\
+-PTL\_RESULT -\textgreater{} total P result mg/L\\
+-PTL\_QA\_FLAG -\textgreater{} total P QA/QC flag
+
+Create new CNP data frame
+
+What is the distribution of collection dates?
+
+Land cover data
+
+
+\end{document}

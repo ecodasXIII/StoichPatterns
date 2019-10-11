@@ -1,0 +1,197 @@
+---
+title: "Lakes 2012 nars data"
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(FedData)
+library(raster)
+library(sf)
+library(leaflet)
+library(readr)
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_knit
+theme_set(theme_bw())
+
+nars_data = read_csv("../data/nars_data_table.csv");nars_data$filename <- basename(nars_data$data_link)
+```
+
+Water chemistry data (DOC, TN, and TP): 2 files for chemistry --> site data and actual chemistry data
+
+`lakes2012_wc1 <- nars_data %>% `
+`  filter(Survey == "Lakes 2012",`
+`         Indicator == "Water Chemistry") %>%`
+`  pull(filename) %>% '[[' (1) %>% # metadata `
+`  paste0("../raw-data/", .) %>%`
+`  read_csv()`
+  
+`lakes2012_wc2 <- nars_data %>% `
+`filter(Survey == "Lakes 2012",`
+`       Indicator == "Water Chemistry") %>%`
+`pull(filename) %>% '[[' (2) %>% # chemistry data `
+`paste0("../raw-data/", .) %>%`
+`read_csv()`
+
+```{r, echo = FALSE, include=FALSE}
+lakes2012_wc1 <- nars_data %>% 
+  filter(Survey == "Lakes 2012",
+         Indicator == "Water Chemistry") %>%
+  pull(filename) %>% '[[' (1) %>% # metadata 
+  paste0("../raw-data/", .) %>%
+  read_csv()
+lakes2012_wc2 <- nars_data %>% 
+  filter(Survey == "Lakes 2012",
+         Indicator == "Water Chemistry") %>%
+  pull(filename) %>% '[[' (2) %>% # chemistry data 
+  paste0("../raw-data/", .) %>%
+  read_csv()
+```
+
+lakes2012_wc1 = H<sub>2</sub>O chem metadata  
+lakes2012_wc2 = H<sub>2</sub>O chem data
+
+```{r, echo = F, include = FALSE}
+names(lakes2012_wc2)
+```
+
+Grab the follow variables:
+
+-UID -> unique ID  
+-SITE_ID -> site ID  
+-DATE_COL -> date collected  
+-DOC_RESULT -> DOC measurement mg/L  
+-DOC_QA_FLAG -> DOC QA/QC flag  
+-NTL_RESULT -> total N result mg/L  
+-NTL_QA_FLAG -> total N QA/QC flag  
+-PTL_RESULT -> total P result mg/L  
+-PTL_QA_FLAG -> total P QA/QC flag 
+
+```{r variable select}
+lakevars <- c("UID", "SITE_ID", "DATE_COL", "DOC_RESULT", "DOC_QA_FLAG", "NTL_RESULT", "NTL_QA_FLAG", "PTL_RESULT", "PTL_QA_FLAG")
+```
+
+Create new CNP data frame: lakes2012_CNP
+
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+lakes2012_meta <- dplyr::select(lakes2012_wc1, one_of(lakevars)) %>%
+  unique()
+lakes2012_data <- dplyr::select(lakes2012_wc2, one_of(lakevars))
+
+lakes2012_CNP <- dplyr::inner_join(lakes2012_data, lakes2012_meta) %>%
+  mutate(PTL_RESULT = PTL_RESULT/1000,
+         C_mol = DOC_RESULT/12.011,
+         N_mol = NTL_RESULT/14.007,
+         P_mol = PTL_RESULT/30.974,
+         CN_mol = (DOC_RESULT/NTL_RESULT)*(14.007/12.011),
+         CP_mol = (DOC_RESULT/PTL_RESULT)*(30.974/12.011),
+         NP_mol = (NTL_RESULT/PTL_RESULT)*(30.974/14.007))
+
+```
+
+Land cover data
+
+```{r, echo = FALSE}
+
+#read in the lists of land use
+land_use_temp = list.files(path = "./Lakes2012/", pattern = "*landuse_list.rds")
+land_use_files = lapply(land_use_temp, readRDS)#make list of landuse lists
+
+land_use_dfs_list = map(land_use_files, function(x){
+  x_names = names(x)
+  x_df_list = map(x, ~..1 %>% spread(key = class_name, value = percent_cover))
+  x_dfs = bind_rows(x_df_list)
+  x_df_full = data.frame(site_ID = x_names, x_dfs, check.names = FALSE)
+  colnames(x_df_full) = gsub(" ","_",colnames(x_df_full))
+  return(x_df_full)
+})
+
+land_use_df = bind_rows(land_use_dfs_list)
+
+land_use_df = land_use_df %>%
+  rename(Barren = `Barren_Land_(Rock/Sand/Clay)`,
+         Grassland = `Grassland/Herbaceous`,
+         Shrubscrub = `Shrub/Scrub`,
+         Agriculture = `Pasture/Hay`,
+         Agriculture = )
+```
+
+Response variables
+
+```{r exploratory_plots, echo = FALSE, include = FALSE, warning=FALSE}
+
+log_breaks = c(log10(0.001), log10(0.005), log10(0.01), log10(0.05), log10(0.1), log10(0.5), log10(1), log10(5), log10(10), log10(50), log10(100), log10(500), log10(1000))
+
+raw_breaks = round(10^(log_breaks),3)
+
+DOC_plot = ggplot(lakes2012_CNP, aes(x = log10(DOC_RESULT))) + geom_histogram() + 
+  ggtitle("DOC distribution") + 
+  scale_x_continuous(name = "DOC (mg/L)", breaks = log_breaks, labels = raw_breaks, limits = c(log10(0.06), log10(900))) + 
+  theme(panel.grid = element_blank(), axis.title.y = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1,margin = margin(t = 3))) 
+
+DOC_ecdf = ggplot(lakes2012_CNP, aes(x = log10(DOC_RESULT))) + stat_ecdf() + 
+  ggtitle("DOC distribution") + 
+  scale_x_continuous(name = "DOC (mg/L)", breaks = log_breaks, labels = raw_breaks, limits = c(log10(0.06), log10(900))) +theme(panel.grid = element_blank(), axis.title.y = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1,margin = margin(t = 3)))
+
+TN_plot = ggplot(lakes2012_CNP, aes(x = log10(NTL_RESULT))) + geom_histogram() +
+  ggtitle("TN distribtuion") + 
+  scale_x_continuous(name = "TN (mg/L)", breaks = log_breaks, labels = raw_breaks, limits = c(log10(0.006), log10(90))) +
+  theme(panel.grid = element_blank(), axis.title.y = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, margin = margin(t = 3)))
+TN_ecdf = ggplot(lakes2012_CNP, aes(x = log10(NTL_RESULT))) + stat_ecdf() +
+  ggtitle("TN distribtuion") + 
+  scale_x_continuous(name = "TN (mg/L)", breaks = log_breaks, labels = raw_breaks, limits = c(log10(0.006), log10(90))) +
+  theme(panel.grid = element_blank(), axis.title.y = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, margin = margin(t = 3)))
+
+TP_plot = ggplot(lakes2012_CNP, aes(x = log10(PTL_RESULT))) + geom_histogram() +
+  ggtitle("TP distribtion") + 
+  scale_x_continuous(name = "TP (mg/L)", breaks = log_breaks, labels = raw_breaks,
+                     limits = c(log10(0.0006), log10(9)))+
+  theme(panel.grid = element_blank(), axis.title.y = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1,margin = margin(t = 3)))
+TP_ecdf = ggplot(lakes2012_CNP, aes(x = log10(PTL_RESULT))) + stat_ecdf() +
+  ggtitle("TP distribtion") + 
+  scale_x_continuous(name = "TP (mg/L)", breaks = log_breaks, labels = raw_breaks,
+                     limits = c(log10(0.0006), log10(9)))+
+  theme(panel.grid = element_blank(), axis.title.y = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1,margin = margin(t = 3)))
+
+CN_plot = ggplot(lakes2012_CNP, aes(x = CN_mol)) + geom_histogram() +
+  ggtitle("C:N ratio distribution") +
+  scale_x_continuous(name = "C:N (molar)") +
+  theme(panel.grid = element_blank(), axis.title.y = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1,margin = margin(t = 3)))
+
+
+```
+
+Summary plots of elemental concentration and stoichiometry 
+#DOC
+```{r show_elem, echo = FALSE, fig.height = 3, fig.width = 9, message = FALSE}
+gridExtra::grid.arrange(DOC_plot,TN_plot,TP_plot, ncol = 3)
+
+```
+
+What is the distribution of collection dates?
+
+```{r, include = TRUE, echo = F, message = FALSE, warning=FALSE}
+lakes2012_CNP <- lakes2012_CNP %>%
+  mutate(date_formatted = as.Date(DATE_COL, format = "%d-%b-%y"),
+         doy = lubridate::yday(date_formatted))
+
+doy_breaks = c(0,32,60,91,121,152,182,213,244,274,305,335)
+month_labels = c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+ggplot(lakes2012_CNP, aes(x = doy)) + geom_histogram() +
+scale_x_continuous(name = "Day of Year", limits = c(0,366), breaks = doy_breaks,
+                   labels = month_labels) +
+  theme(axis.title.y = element_blank(), panel.grid = element_blank())
+```
+

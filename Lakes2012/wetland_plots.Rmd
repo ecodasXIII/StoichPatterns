@@ -1,0 +1,451 @@
+---
+title: "NWCA Wetland Stoichiometry analysis"
+output:
+  pdf_document: 
+    df_print: kable
+    fig_caption: yes
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(ggplot2)
+library(corrplot)
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+```
+
+```{r loaddata, echo=FALSE, message=FALSE}
+wetland_stoich <- readr::read_csv("wetland_stoich.csv")
+```
+
+As part of the EPA’s National Aquatic Resource Surveys, the 2011 National Wetland Condition Assessment included, for the first time, collection of water samples. These were analyzed for a basic suite of water chemistry parameters including nitrogen and phosphorus species, allowing for calculation of the molar ratio or stoichiometric balance between these elements in wetland surface water. For the purposes of this survey, wetland areas include shallow open water less than 1m deep. Surface water was sampled where there was at least 15 cm of water present on the day of sampling. 56% of the wetlands sampled had sufficient surface water for collection and analysis (631 sites out of 1,138). All of the sites were sampled in the summer growing season of 2011 which is likely when water tables are relatively low, which could result in concentrated nutrients. The dataset is described in detail in the 2011 Technical report section 11.3.1. 
+The dataset includes 667 samples from 619 sites. 
+
+# Data preparation
+
+Duplicate samples from the same site are labeled as “REVISITS” in the SITE_USE column. Section 11.3.2 of the report describes the revisit samples; their analysis indicates TN and TP between visits have Pearson correlation > 0.8 and regression slopes close to 1:1. Therefore, for this analysis site revisit samples are excluded. 
+
+In the NWCA data, landscape data is included for each site including [NLCD land cover](  https://www.mrlc.gov/data/legends/national-land-cover-database-2011-nlcd2011-legend) and impervious surface coverage from 2001 and 2006 in 200m, 500m, and 1km buffers. There is also PRISM precipitation and temperature data (numerous variables), road density, and 2010 census population density. Because the 2011 NLCD data is now available, I downloaded new data for all of the sites in the same buffer distances, as well as in a larger 2 km buffer based on a literature review finding effects of landcover on water quality beyond 1km (Houlahan & Findlay 2004; Rooney & Bayley 2011; Bayley et al. 2013). The GPS coordinates in the original data were in NAD 83 (NWCA Site evaluation guidelines, page 16) which is EPSG:4269. Before creating buffer polygons, I projected the points to the Albers Equal-Area Conic projection (EPSG:5070). I grouped together NLCD categories using the same combinations that were used in the NWCA technical report (Table 1). Three other types of land cover that were present in the buffers: Grassland, Shrub/Scrub, and Barren. 
+
+```{r nlcdgroupstable, echo=FALSE}
+nlcd_groups <- data.frame(Aggregate = c("Agriculture", "Developed", "Forested", "WetlandWater"),
+                          Inputs = c("Pasture/Hay, Cultivated Crops",
+                                     "Low, medium, high density development and developed open space",
+                                     "Deciduous, Evergreen, and mixed forest",
+                                     "Open water, woody wetland, emergent herbaceous wetland"))
+kable(nlcd_groups, caption = "NLCD groupings", 
+      format = "latex", booktabs = TRUE) %>% 
+  kable_styling(position = "center", latex_options = "striped")
+```
+
+Impervious surface coverage is separate from the land cover variables because it is not additive like the others. Impervious surface coverage in NLCD is reported as 0-100% per 30x20m pixel. In order to calculate a total percent for the buffer area, I summed up all pixel values within the buffer area and multiplied by the pixel area, 30x30, then divided that area by the total buffer area. 
+
+The technical report for the 2011 Wetlands condition assessment includes a preliminary analysis of the water chemistry results (Chapter 11), including a comparison of the N:P ratios across geographic reporting units, hydrogeomorphic types, and herbaceous vs. woody wetlands. It is presumed that at N:P below 16, the limiting nutrient is nitrogen while above 16 it is phosphorus. They show that “herbaceous wetlands tend to have lower N:P than woody vegetation wetlands, but that wetlands in almost all geographic regions and hydrogeomorphic types span the range from N to P limited.”
+
+For the water chemistry data, I removed samples that were flagged “REJECT” in the TN or TP usability columns. For 15 samples, there was no TN value but the usability column said to use TKN + NO3NO2 and those values are included. TN is reported in mg/L and TP is reported in µg/L. These values were converted into a molar ratio using 14.01 g = 1 mol for N and 30.97 g = 1 mol for P. 
+
+# Predictor variables
+
+## Land cover
+
+Landcover variables are from NLCD and grouped according to Table 1 and also Barren, Grassland, and Shrub/Scrub. Defintions of the unaggregated categories can be found [here](https://www.mrlc.gov/data/legends/national-land-cover-database-2011-nlcd2011-legend). In the file `wetland_stoich.csv`, these data are in the columns `bufferdist`, `class_name`, `percent_cover`, and `percent_impervious`. 
+
+```{r, echo=FALSE}
+dplyr::select(wetland_stoich, SITE_ID, TN_adj, TP_adj, bufferdist, class_name, percent_cover, percent_impervious) %>% head()
+```
+
+```{r, echo=FALSE}
+nlcd_vars <- c("percent_impervious", "Agriculture", "Barren", "Developed",
+               "Forested", "Grassland", "Shrubscrub", "WetlandWater")
+```
+
+The `tidyr::spread` function can be used to separate out the land cover classes into separate columns. 
+
+```{r}
+wetland_stoich_spread <- tidyr::spread(wetland_stoich, class_name, percent_cover) %>%
+  rename(Barren = `Barren Land (Rock/Sand/Clay)`,
+         Grassland = `Grassland/Herbaceous`,
+         Shrubscrub = `Shrub/Scrub`)
+```
+
+```{r, echo=FALSE}
+wetland_stoich_200 <- dplyr::filter(wetland_stoich_spread, bufferdist == 200)
+wetland_stoich_500 <- dplyr::filter(wetland_stoich_spread, bufferdist == 500)
+wetland_stoich_1000 <- dplyr::filter(wetland_stoich_spread, bufferdist == 1000)
+wetland_stoich_2000 <- dplyr::filter(wetland_stoich_spread, bufferdist == 2000)
+```
+
+## Climate
+
+Temperature and precipitation variables were included in the NWCA data set. Temperature variables are all in units of degrees C and precipitation variables are all in cm. 
+
+
+```{r tempvars, echo=FALSE}
+temp_vars <- c("TIP_PT", "TMAX_PT", "TMAXSD_PT", "TMEAN_PT", 
+               "TMEANPW_PT", "TMEANPY_PT", "TMEANSD_PT", "TMIN_PT", "TMINSD_PT")
+temp_vars_defs <- data.frame(Variable = temp_vars,
+                             Definition = c("monthly mean air temperature of index period (5 months)",
+                                            "mean annual maximum air temperature (30 yrs)",
+                                            "SD of annual max air temperature",
+                                            "mean annual air temperature (30 yrs)",
+                                            "monthly mean air temperature of prior winter",
+                                            "mean temperature for year prior to sampling (12 months)",
+                                            "SD of mean annual air temperature",
+                                            "mean annual minimum air temperature (30 yrs)",
+                                            "SD of annual min air temperature"))
+
+kable(temp_vars_defs, caption = "Temperature variables", 
+      format = "latex", booktabs = TRUE) %>% 
+  kable_styling(position = "center", latex_options = c("striped", "hold_position"))
+```
+
+
+```{r precipvars, echo= FALSE}
+precip_vars <- c("PCVPY_PT", "PIP_PT", "PMAX_PT", "PMEAN_PT",
+                 "PMIN_PT", "PSUM6M_PT", "PSUMPY_PT")
+precip_vars_defs <- data.frame(Variable = precip_vars,
+                             Definition = c("CV of total monthly precip (12 months)",
+                                            "total average precipitation during index period (5 months)",
+                                            "mean maximum precipitation (30 yrs)",
+                                            "mean annual precipitation (30 yrs)",
+                                            "mean minimum precipitation (30 yrs)",
+                                            "total average precipitation for 6 months prior to sampling",
+                                            "	total average precip for 12 months prior to sampling (12 months)"))
+
+kable(precip_vars_defs, caption = "Precipitation variables", 
+      format = "latex", booktabs = TRUE) %>% 
+  kable_styling(position = "center", latex_options = c("striped", "hold_position"))
+```
+
+Also included from the NWCA dataset on landscape variables are Population Density in 1000m-Clipped Buffer (people/sqmi) (`POPDEN_1000`) and Road Density in 1000m-Clipped Buffer (km/sqkm) (`ROADDEN_1000`). 
+
+## Correlation of predictor variables
+
+Predictor variables include land cover percentages, temperature metrics, and precipitation metrics. Figure 1 shows correlations. Percent impervious, developed land cover, road density, and population density are all highly correlated with each other but not much else. Wetland and water land cover seems to be the only other category with strong correlations to other predictors – negative correlations with temperature variability metrics (TMINSD, TMAXSD, TMEANSD) and positively correlated with 5-month mean air temperature, mean air temperature of the previous year and previous winter, and max, min, and mean temperatures. Wetland/water cover is also negatively correlated with agriculture. Mean precipitation and mean temperature are positively correlated. 
+
+```{r echo=FALSE}
+all_predictor_vars <- c(nlcd_vars, temp_vars, precip_vars, "ROADDEN_1000", "POPDEN_1000")
+```
+
+
+```{r corplot2000, echo=FALSE, fig.cap="Correlation plot for precitor variables at 2000m buffer. X indicates not significant at 0.05 level."}
+
+corplot_df <- wetland_stoich_2000
+
+cor_out <- cor(corplot_df[,c(all_predictor_vars, "TN_adj", "TP_adj")], use = "pairwise")
+cor_test_out <- cor.mtest(corplot_df[,c(all_predictor_vars, "TN_adj", "TP_adj")], use = "pairwise", conf.level = 0.95)
+
+# pdf("figures/corrplot_predictors_200m.pdf")
+corrplot(cor_out, 
+         p.mat = cor_test_out$p, 
+         # sign.level = 0.05,
+         tl.cex = 0.75, tl.col = "black",
+         # method = "pie", 
+         type = "upper", 
+         order = "hclust")
+# dev.off()
+```
+
+```{r include=FALSE}
+corrplot(cor_out, method = "number", type = "upper",
+         order = "hclust",
+         tl.cex = 0.75, tl.col = "black",
+         number.cex = 0.75)
+```
+
+> Are ecoregions confounded with landscape variables? 
+
+It was suspected that land cover percentages might be confounded with Eco-region. In the NWCA dataset, 4 aggregated ecoregions are used – Coastal Plain, Eastern Mountains & Upper Midwest, Interior Plains, and West. Figure 2 shows that Agriculture and Grassland are more predominant in the Interior Plains, Forest cover is higher in EMU and West, Shrub/Scrub coverage is higher in the West, and Coastal Plain has higher wetland and water coverage. 
+
+```{r, echo=FALSE, fig.cap="Land cover at 2000m buffer across ecoregions"}
+# pdf("figures/landcover_x_eco4.pdf", width = 6, height = 4)
+wetland_stoich %>%
+  dplyr::filter(bufferdist == 2000) %>%
+  ggplot(aes(x = NWCA_ECO4, y = percent_cover)) +
+  geom_boxplot(aes(color = NWCA_ECO4)) +
+  facet_wrap(vars(class_name), scales = "free") +
+  theme_bw() + theme(legend.position = "none")
+# dev.off()
+```
+
+# Site information
+
+UID and SITE_ID are site identifiers. Each site is categorized based on several classifications. 
+
+```{r sitevars, echo=FALSE}
+site_group_vars <- c("CLASS_FIELD_HGM", "NWCA_ECO4", "REFPLUS_NWCA", "NWCA_WET_GRP", "ECO_X_WETGRP")
+site_vars_defs <- c(Variable = site_group_vars,
+                    Definition = c("hydrogeomorphic class (Depressional, flats, fringe, riverine, slope, tidal)",
+                                   "aggregated ecoregions (Coastal Plain, Eastern Mounts and Upper Midwest, Interior Plains, West)",
+                                   "reference classes (MIN, least, intermediate, most)",
+                                   "aggregated wetland classes: PRLH=Palustrine, Riverine, and Lacustrine Herbaceous,PRLW=Palustrine, Riverine, and Lacustrine Woody,EH=Estuarine Herbaceous,EW=Estuarine Woody",
+                                   "combination of wetland classes and ecoregions"))
+kable(precip_vars_defs, caption = "Precipitation variables", 
+      format = "latex", booktabs = TRUE) %>% 
+  kable_styling(position = "center", latex_options = "striped")
+```
+
+
+******
+
+# Results
+
+# Outcome variables
+
+* TN_adj and TP_adj - total N and total P with flagged values taken out. TN in mg/L and TP in ug/L
+* N_molperL and P_molperL - for conversion to stoichiometry
+* NP - molar ratio
+
+## Distribution of TN, TP, ratio in different predictor groups and site groups
+
+```{r, echo=FALSE, fig.cap="Density plot comparing NP across reference levels - MIN, least, intermediate, most", warning=FALSE}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = NP, color = REFPLUS_NWCA)) +
+  stat_ecdf(alpha = 0.85) +
+  scale_x_log10() +
+  # facet_wrap(vars(ECO_X_WETGRP)) +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1") +
+  ylab("Fraction of observations") +
+  coord_cartesian(xlim = c(1, 200))
+```
+
+```{r, echo=FALSE, fig.cap="Boxplot of N:P across reference levels"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = REFPLUS_NWCA, y = NP)) +
+  geom_boxplot(aes(fill = REFPLUS_NWCA)) +
+  scale_y_log10() +
+  theme_bw() + theme(legend.position = "none")
+```
+
+```{r, include= FALSE}
+dplyr::filter(wetland_stoich_2000, is.na(CLASS_FIELD_HGM)) # sites with NA HGM ()
+```
+
+```{r, echo=FALSE, fig.cap="Boxplot of NP across hydrogeomorphic groups"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = CLASS_FIELD_HGM, y = NP)) +
+  geom_boxplot(aes(fill = CLASS_FIELD_HGM)) +
+  scale_y_log10() +
+  theme_bw() + theme(legend.position = "none")
+```
+
+
+```{r, echo = FALSE, fig.cap="N:P across hydrogeomorphic types by impact level"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = CLASS_FIELD_HGM, y = NP)) +
+  geom_boxplot(aes(fill = REFPLUS_NWCA)) +
+  scale_y_log10() +
+  theme_bw()
+```
+
+```{r, echo=FALSE, fig.cap="N:P across ecoregions"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = NWCA_ECO4, y = NP)) +
+  geom_boxplot(aes(fill = NWCA_ECO4)) +
+  scale_y_log10() +
+  theme_bw()
+```
+
+```{r, echo=FALSE, fig.cap="Distributions of N:P across ecoregions"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = NP)) +
+  geom_density(aes(fill = NWCA_ECO4), alpha = 0.5) +
+  scale_x_log10() +
+  theme_bw()
+```
+
+```{r, echo=FALSE, fig.cap="Empirical cumulative distribution for N:P across ecoregions"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = NP, color = NWCA_ECO4)) +
+  stat_ecdf() +
+  scale_x_log10() +
+  theme_bw() +
+  ylab("Fraction of observations")
+```
+
+```{r, echo=FALSE, fig.cap="Hydrogeomorphic classes across ecoregion"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = NWCA_ECO4, y = NP)) +
+  geom_boxplot(aes(fill = CLASS_FIELD_HGM)) +
+  scale_y_log10() +
+  theme_bw()
+```
+
+```{r, echo=FALSE, fig.cap="N:P across ecoregions and hydrogeomorphic types"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = CLASS_FIELD_HGM, y = NP)) +
+  geom_boxplot(aes(fill = NWCA_ECO4)) +
+  scale_y_log10() +
+  theme_bw()
+```
+
+
+```{r, echo=FALSE, fig.cap="N:P across wetland classes"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = NWCA_WET_GRP, y = NP)) +
+  geom_boxplot(aes(fill = NWCA_WET_GRP)) +
+  scale_y_log10() +
+  theme_bw() + theme(legend.position = "none")
+```
+
+```{r, echo=FALSE, fig.cap="N:P across wetland classes and ecoregions"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = NWCA_WET_GRP, y = NP)) +
+  geom_boxplot(aes(fill = NWCA_ECO4)) +
+  scale_y_log10() +
+  theme_bw()
+```
+
+## Regressions
+
+
+```{r, echo=FALSE, fig.cap="Relationship between N:P and land cover variables across all categories"}
+# pdf("figures/NPratio_x_landcover.pdf", width = 6, height = 4)
+wetland_stoich %>%
+  filter(bufferdist == 2000) %>%
+  filter(!is.na(class_name)) %>%
+  ggplot(aes(x = percent_cover, y = NP)) +
+  geom_point(alpha = 0.5, pch = 21) +
+  scale_y_log10() +
+  facet_wrap(vars(class_name), scales = "free") +
+  geom_smooth(method = "lm", se = FALSE, lwd = 0.5) +
+  theme_bw() +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  guides(color = FALSE)
+# dev.off()
+```
+
+
+```{r, echo=FALSE, fig.cap="Relationship between N:P and impervious cover across all categories"}
+# pdf("figures/np_x_impervious.pdf", width = 4, height = 3)
+wetland_stoich_2000 %>%
+  ggplot(aes(x = percent_impervious, y = NP)) +
+  geom_point(pch = 21) +
+  scale_y_log10() +
+  # facet_wrap(vars(class_name), scales = "free") +
+  geom_smooth(method = "lm", se = FALSE, lwd = 0.5) +
+  theme_bw() +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  guides(color = FALSE)
+# dev.off()
+```
+
+```{r, echo=FALSE, fig.cap="Relationship between N:P and mean annual precipitation across all categories"}
+# pdf("figures/np_x_meanprecip.pdf", width = 4, height = 3)
+wetland_stoich_2000 %>%
+  ggplot(aes(x = PMEAN_PT, y = NP)) + # mean annual precip (30 years)
+  geom_point(pch = 21) +
+  scale_y_log10() +
+  # facet_wrap(vars(class_name), scales = "free") +
+  geom_smooth(method = "lm", se = FALSE, lwd = 0.5) +
+  theme_bw() +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  guides(color = FALSE)
+# dev.off()
+```
+
+```{r, echo=FALSE, fig.cap="Relationship between N:P and mean annual temperature across all categories"}
+wetland_stoich_2000 %>%
+  ggplot(aes(x = TMEAN_PT, y = NP)) + # mean annual temp (30 years)
+  geom_point(pch = 21) +
+  scale_y_log10() +
+  # facet_wrap(vars(class_name), scales = "free") +
+  geom_smooth(method = "lm", se = FALSE, lwd = 0.5) +
+  theme_bw() +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  guides(color = FALSE)
+```
+
+
+```{r, echo=FALSE, fig.cap="N:P vs. percent cover by ecoregion and hydrogeomorphic class"}
+wetland_stoich %>%
+  filter(bufferdist == 1000) %>%
+  filter(!is.na(class_name)) %>%
+  ggplot(aes(x = percent_cover, y = NP)) +
+  geom_point(alpha = 0.5, pch = 21, aes(fill = CLASS_FIELD_HGM )) +
+  scale_y_log10() +
+  facet_grid(vars(class_name), vars(NWCA_ECO4), scales = "free") +
+  geom_smooth(method = "lm", se = FALSE, lwd = 0.5) +
+  theme_bw() +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  theme(legend.position = "bottom") +
+  guides(color = FALSE)
+```
+
+
+```{r, echo=FALSE, fig.cap="Not separated by HGM class"}
+# pdf("figures/NP_x_cover_xECO4_2000m.pdf", width = 9, height = 5)
+wetland_stoich %>%
+  mutate(bufferdist_chr = paste0(as.character(bufferdist), "m")) %>%
+  filter(!is.na(class_name)) %>%
+  filter(bufferdist == 2000) %>%
+  ggplot(aes(x = percent_cover, y = NP)) +
+  geom_point(alpha = 0.5, pch = 21) +
+  scale_y_log10() +
+  facet_grid(vars(NWCA_ECO4), vars(class_name)) +
+  # geom_smooth(aes(color = REFPLUS_NWCA), method = "lm", se = FALSE) +
+  geom_smooth(aes(color = NWCA_ECO4), method = "lm", se = FALSE) +
+  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d() +
+  theme(legend.position = "none")
+# dev.off()
+```
+
+```{r, echo=FALSE, fig.cap="N:P vs percent cover metrics at different buffer distances"}
+# pdf("figures/NP_x_cover_xbufferdist.pdf", width = 9, height = 5)
+wetland_stoich %>%
+  mutate(bufferdist_chr = paste0(as.character(bufferdist), "m")) %>%
+  filter(!is.na(class_name)) %>%
+  ggplot(aes(x = percent_cover, y = NP, group = bufferdist_chr)) +
+  geom_point(alpha = 0.5, pch = 21, aes(fill = bufferdist_chr)) +
+  scale_y_log10() +
+  facet_grid(vars(NWCA_ECO4), vars(class_name)) +
+  geom_smooth(aes(color = bufferdist_chr), method = "lm", se = FALSE) +
+  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d() +
+  theme(legend.position = "bottom")
+# dev.off()
+```
+
+
+```{r, echo=FALSE, fig.cap="Total Nitrogen vs land cover separated by hydrogeomorphic classes"}
+
+wetland_stoich %>%
+    filter(bufferdist == 1000) %>%
+  filter(!is.na(class_name)) %>%
+  ggplot(aes(x = percent_cover, y = TN_adj)) +
+  geom_point(alpha = 0.5, pch = 21, aes(fill = CLASS_FIELD_HGM )) +
+  scale_y_log10() +
+  facet_grid(vars(NWCA_ECO4), vars(class_name), scales = "free") +
+  geom_smooth(aes(color = CLASS_FIELD_HGM), method = "lm", se = FALSE, lwd = 0.5) +
+  theme_bw() +  guides(color = FALSE) +
+    theme(legend.position = "bottom") +
+  scale_color_viridis_d() + scale_fill_viridis_d() + ylab("Total N (mg/L)")
+
+```
+
+```{r, echo=FALSE, fig.cap="Total P vs land cover separated by hydrogeomorphic classes"}
+
+wetland_stoich %>%
+    filter(bufferdist == 1000) %>%
+  filter(!is.na(class_name)) %>%
+  ggplot(aes(x = percent_cover, y = TP_adj)) +
+  geom_point(alpha = 0.5, pch = 21, aes(fill = CLASS_FIELD_HGM )) +
+  scale_y_log10() +
+  facet_grid(vars(NWCA_ECO4), vars(class_name), scales = "free") +
+  geom_smooth(aes(color = CLASS_FIELD_HGM), method = "lm", se = FALSE, lwd = 0.5) +
+  theme_bw() +  guides(color = FALSE) +
+  scale_color_viridis_d() + scale_fill_viridis_d() +
+  theme(legend.position = "bottom") +
+  ylab(expression(paste("Total P (", mu, "g/L)")))
+
+```
+

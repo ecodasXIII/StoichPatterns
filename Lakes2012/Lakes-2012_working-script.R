@@ -116,6 +116,100 @@ tic();for(i in seq_along(basin_shapes5[[1]]))lakes_landuse5[[i]] <- get_nlcd_per
 names(lakes_landuse5) <- basin_shapes5$NLA12_ID
 saveRDS(lakes_landuse5, file = "./ecosystem_scripts/Lakes2012/05_lakes_landuse_list.rds")
 
+
+#######  CODE FOR RMARKDOWN OUTPUT #########
+
+#create new CNP dataframe
+# lakevars <- c("UID", "SITE_ID", "AREA_HA", "DATE_COL", "TEMPERATURE", "DOC_RESULT", "DOC_QA_FLAG", "NTL_RESULT", "NTL_QA_FLAG", "PTL_RESULT", "PTL_QA_FLAG")
+lakevars <- c("UID", "SITE_ID", "AREA_HA", "DATE_COL", "DOC_RESULT", "DOC_QA_FLAG", "NTL_RESULT", "NTL_QA_FLAG", "PTL_RESULT", "PTL_QA_FLAG")
+
+
+lakes2012_meta <- dplyr::select(lakes2012_wc1, one_of(lakevars)) %>%
+  unique()
+lakes2012_data <- dplyr::select(lakes2012_wc2, one_of(lakevars))
+lakes2012_site <- dplyr::select(lakes2012_site, one_of(lakevars))
+
+lakes2012_CNP <- dplyr::inner_join(lakes2012_meta, lakes2012_data) %>%
+  inner_join(lakes2012_site %>% select(-DATE_COL)) %>%
+  mutate(PTL_RESULT = PTL_RESULT/1000,
+         C_mol = DOC_RESULT/12.011,
+         N_mol = NTL_RESULT/14.007,
+         P_mol = PTL_RESULT/30.974,
+         CN_mol = (DOC_RESULT/NTL_RESULT)*(14.007/12.011),
+         CP_mol = (DOC_RESULT/PTL_RESULT)*(30.974/12.011),
+         NP_mol = (NTL_RESULT/PTL_RESULT)*(30.974/14.007))
+
+# land cover work with landuse lists 1-5
+
+#read in the lists of land use
+land_use_temp = list.files(path = "./Lakes2012/", pattern = "*landuse_list.rds", full.names = TRUE)
+land_use_files = lapply(land_use_temp, readRDS)#make list of landuse lists
+
+land_use_dfs_list = map(land_use_files, function(x){
+  x_names = names(x)
+  x_df_list = map(x, ~..1 %>% spread(key = class_name, value = percent_cover))
+  x_dfs = bind_rows(x_df_list)
+  x_df_full = data.frame(SITE_ID = x_names, x_dfs, check.names = FALSE)
+  colnames(x_df_full) = gsub(" ","_",colnames(x_df_full))
+  return(x_df_full)
+})
+
+land_use_df = land_use_dfs_list %>% 
+              bind_rows() %>%
+              gather(key = class_name, value = percent_cover, `Deciduous_Forest`:`Perennial_Ice/Snow`)
+
+#rename cover classes to aggregrated categories
+#old names
+old_cover_classes = list(c('Pasture/Hay','Cultivated_Crops'),
+                         c('Developed_High_Intensity','Developed,_Low_Intensity',
+                           'Developed,_Medium_Intensity','Developed,_Open_Space'),
+                         c('Deciduous_Forest','Evergreen_Forest','Mixed_Forest'),
+                         c('Open_Water','Woody_Wetlands','Emergent_Herbaceous_Wetlands'),
+                         'Barren_Land_(Rock/Sand/Clay)',
+                         'Grassland/Herbaceous',
+                         'Shrub/Scrub',
+                         'Perennial_Ice/Snow',
+                         '<NA>')
+#aggregated names
+aggregate_cover_class = list('Agriculture',
+                             'Developed',
+                             'Forested',
+                             'WetlandWater',
+                             'Barren',
+                             'Grassland',
+                             'Shrubscrub',
+                             'Ice_Snow',
+                             "Unknown")
+
+#keyval list of changes
+keyval = setNames(rep(aggregate_cover_class, lengths(old_cover_classes)), unlist(old_cover_classes))
+
+#make changes to class names
+land_use_df = land_use_df %>%
+              mutate(class_name = recode(class_name, !!!keyval)) %>%
+              group_by(SITE_ID, class_name) %>%
+              summarise(percent_cover = sum(percent_cover)) %>% ungroup()
+
+# Quick check 
+unique(levels(as.factor(land_use_df$class_name)))
+
+lakes2012_full = inner_join(lakes2012_CNP, land_use_df %>% spread(key = class_name, value = percent_cover)) %>%
+  mutate_at(vars(Agriculture:WetlandWater), replace_na, 0)
+
+
+
+
+
+
+
+
+
+
+
+######## END RMARKDOWN CODE ######
+
+
+s
 #saveRDS(lakes_landuse, file = "./ecosystem_scripts/Lakes2012/lake_landuse_list.rds")
 #attempt to speed it with lapply functions.
 ten_lakes = list()

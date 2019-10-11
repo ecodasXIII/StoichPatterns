@@ -1,0 +1,61 @@
+---
+title: "Wetlands 2011 nars data"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+nars_data %>% 
+  filter(Survey == "Wetlands 2011") %>%
+  pull(Indicator) %>% unique()
+```
+
+water chemistry data (TN and TP)
+
+```{r}
+w2011_wc <- nars_data %>% 
+  filter(Survey == "Wetlands 2011",
+         Indicator == "Water Chemistry") %>%
+  pull(filename) %>% paste0("data/", .) %>%
+  read_csv()
+```
+
+```{r}
+names(w2011_wc)
+```
+
+Carbon data? Looks like it is in soil chemistry
+
+```{r}
+w2011_carbon <- nars_data %>% 
+  filter(Survey == "Wetlands 2011",
+         Indicator == "Soil Chemistry") %>%
+  pull(filename) %>% paste0("data/", .) %>%
+  read_csv()
+```
+
+Landscape data
+
+```{r}
+# check 2 parsing failures
+w2011_landscape <- nars_data %>% 
+  filter(Survey == "Wetlands 2011",
+         Indicator == "Landscape Data") %>%
+  pull(filename) %>% paste0("data/", .) %>%
+  read_csv()
+```
+
+```{r}
+w2011_siteinfo <- nars_data %>% 
+  filter(Survey == "Wetlands 2011",
+         Indicator == "Site Information") %>%
+  pull(filename) %>% 
+  tail(1) %>% # aachar and siteinfo files
+  paste0("data/", .) %>%
+  read_csv()
+```
