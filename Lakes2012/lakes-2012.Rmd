@@ -124,7 +124,7 @@ Response variables
 
 ```{r exploratory_plots, echo = FALSE, include = FALSE, warning=FALSE}
 
-log_breaks = c(log10(0.001), log10(0.005), log10(0.01), log10(0.05), log10(0.1), log10(0.5), log10(1), log10(5), log10(10), log10(50), log10(100), log10(500), log10(1000))
+log_breaks = c(log10(0.001), log10(0.005), log10(0.01), log10(0.05), log10(0.1), log10(0.5), log10(1), log10(5), log10(10), log10(50), log10(100), log10(500), log10(1000),log10(5000), log10(10000), log10(50000),log10(100000))
 
 raw_breaks = round(10^(log_breaks),3)
 
@@ -194,4 +194,15 @@ scale_x_continuous(name = "Day of Year", limits = c(0,366), breaks = doy_breaks,
                    labels = month_labels) +
   theme(axis.title.y = element_blank(), panel.grid = element_blank())
 ```
+
+Lake Area distribution?
+
+```{r, include=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+Area_plot = ggplot(lakes2012_full, aes(x = log10(AREA_HA))) + geom_histogram() +
+  scale_x_continuous(name = "Lake Area (Hectares)", breaks = log_breaks, labels = raw_breaks)+
+  theme(panel.grid = element_blank(), axis.title.y = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1,margin = margin(t = 3)))
+```
+
+Bivariate elemetnal plots with stoichiometric isoclines
 

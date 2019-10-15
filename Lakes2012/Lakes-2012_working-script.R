@@ -131,10 +131,10 @@ lakes2012_site <- dplyr::select(lakes2012_site, one_of(lakevars))
 
 lakes2012_CNP <- dplyr::inner_join(lakes2012_meta, lakes2012_data) %>%
   inner_join(lakes2012_site %>% select(-DATE_COL)) %>%
-  mutate(PTL_RESULT = PTL_RESULT/1000,
-         C_mol = DOC_RESULT/12.011,
-         N_mol = NTL_RESULT/14.007,
-         P_mol = PTL_RESULT/30.974,
+  mutate(PTL_RESULT = PTL_RESULT/1000,#get to mg/L
+         C_mol = (DOC_RESULT/12.011)*1000,#convert to umol
+         N_mol = (NTL_RESULT/14.007)*1000,#convert to umol
+         P_mol = (PTL_RESULT/30.974)*1000,#convert to umol
          CN_mol = (DOC_RESULT/NTL_RESULT)*(14.007/12.011),
          CP_mol = (DOC_RESULT/PTL_RESULT)*(30.974/12.011),
          NP_mol = (NTL_RESULT/PTL_RESULT)*(30.974/14.007))
@@ -157,6 +157,9 @@ land_use_dfs_list = map(land_use_files, function(x){
 land_use_df = land_use_dfs_list %>% 
               bind_rows() %>%
               gather(key = class_name, value = percent_cover, `Deciduous_Forest`:`Perennial_Ice/Snow`)
+
+land_use_df_wide = land_use_df %>% 
+  group_by(SITE_ID) %>% summarise(total_use = sum(percent_cover, na.rm = TRUE))
 
 #rename cover classes to aggregrated categories
 #old names
@@ -197,7 +200,103 @@ lakes2012_full = inner_join(lakes2012_CNP, land_use_df %>% spread(key = class_na
   mutate_at(vars(Agriculture:WetlandWater), replace_na, 0)
 
 
+#Look at the distribution of watershed sizes
+log_breaks = c(log10(0.5), log10(1), log10(5), log10(10), log10(50), log10(100), log10(500), log10(1000), log10(5000), log10(10000), log10(50000),log10(100000))
+raw_breaks = round(10^(log_breaks),3)
 
+Area_plot = ggplot(lakes2012_full, aes(x = log10(AREA_HA))) + geom_histogram() +
+  scale_x_continuous(name = "Lake Area (Hectares)", breaks = log_breaks, labels = raw_breaks)+
+  theme(panel.grid = element_blank(), axis.title.y = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1,margin = margin(t = 3)))
+
+######## Create stoic isocline dataframe for plotting
+NP_0.1 = data.frame(Stoic = "NP_0.1", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.1)
+NP_0.2 = data.frame(Stoic = "NP_0.2", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.2)
+NP_0.3 = data.frame(Stoic = "NP_0.3", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.3)
+NP_0.4 = data.frame(Stoic = "NP_0.4", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.4)
+NP_0.5 = data.frame(Stoic = "NP_0.5", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.5)
+NP_0.6 = data.frame(Stoic = "NP_0.6", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.6)
+NP_0.7 = data.frame(Stoic = "NP_0.7", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.7)
+NP_0.8 = data.frame(Stoic = "NP_0.8", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.8)
+NP_0.9 = data.frame(Stoic = "NP_0.9", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.9)
+NP_1 = data.frame(Stoic = "NP_1", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1))
+NP_2 = data.frame(Stoic = "NP_2", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*2)
+NP_3 = data.frame(Stoic = "NP_3", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*3)
+NP_4 = data.frame(Stoic = "NP_4", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*4)
+NP_5 = data.frame(Stoic = "NP_5", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*5)
+NP_6 = data.frame(Stoic = "NP_6", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*6)
+NP_7 = data.frame(Stoic = "NP_7", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*7)
+NP_8 = data.frame(Stoic = "NP_8", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*8)
+NP_9 = data.frame(Stoic = "NP_9", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*9)
+NP_10 = data.frame(Stoic = "NP_10", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*10)
+NP_20 = data.frame(Stoic = "NP_20", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*20)
+NP_30 = data.frame(Stoic = "NP_30", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*30)
+NP_40 = data.frame(Stoic = "NP_40", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*40)
+NP_50 = data.frame(Stoic = "NP_50", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*50)
+NP_60 = data.frame(Stoic = "NP_60", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*60)
+NP_70 = data.frame(Stoic = "NP_70", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*70)
+NP_80 = data.frame(Stoic = "NP_80", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*80)
+NP_90 = data.frame(Stoic = "NP_90", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*90)
+NP_100 = data.frame(Stoic = "NP_100", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*100)
+NP_200 = data.frame(Stoic = "NP_200", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*200)
+NP_300 = data.frame(Stoic = "NP_300", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*300)
+NP_400 = data.frame(Stoic = "NP_400", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*400)
+NP_500 = data.frame(Stoic = "NP_500", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*500)
+NP_1000 = data.frame(Stoic = "NP_1000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*1000)
+NP_2000 = data.frame(Stoic = "NP_2000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*2000)
+NP_3000 = data.frame(Stoic = "NP_3000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*3000)
+NP_4000 = data.frame(Stoic = "NP_4000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*4000)
+NP_5000 = data.frame(Stoic = "NP_5000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*5000)
+
+NP = data.frame(rbind(NP_0.1, NP_0.2,NP_0.3,NP_0.4, NP_0.5, NP_0.6, NP_0.7, NP_0.8, NP_0.9, NP_1, NP_2, NP_3, NP_4, NP_5, NP_6, NP_7, NP_8, NP_9, NP_10,
+                      NP_20, NP_30, NP_40, NP_50, NP_60, NP_70, NP_80, NP_90, NP_100, NP_200, NP_300, NP_400, NP_500, NP_1000, NP_2000, NP_3000, NP_4000, 
+                      NP_5000), stringsAsFactors = T)
+NP$Stoic = factor(NP$Stoic)
+ NP = NP[-which(NP$Npool > 3800 | NP$Npool < 0.9 | NP$Ppool > 120 | NP$Ppool < 0.1),]
+# lines = c("solid", rep("dotted", 3), "dashed", rep("dotted", 4), "solid", "solid", "solid", rep("dotted", 6), "dashed", "dashed",rep("dotted", 8), rep("dotted", 4))
+lines = c(rep(c('solid','dotted','dotted','dotted','dashed', 'dotted','dotted','dotted','dotted'),3),
+          'solid','dotted','dotted','dotted','dashed','solid','dotted','dotted','dotted','dashed')
+p1 = ggplot() +
+  geom_line(data = NP, aes(x = Ppool, y = Npool, group = Stoic, linetype = Stoic), alpha = 0.7, size = 0.5, colour = "black") +
+  scale_linetype_manual(values = lines) + theme_bw()+
+  theme(panel.grid = element_blank(), legend.position = "none", axis.text = element_text(size = 20))#;p1
+
+p1 = p1 + geom_point(data = lakes2012_full, aes(x = P_mol, y = N_mol), fill = 'red',  shape = 21, colour = "black", size = 2) + 
+  xlab(expression("Phosphorus ("~mu*"mol)")) +
+  ylab(expression("Nitrogen ("~mu*"mol)"))
+
+p2 = p1 +   
+   coord_cartesian(ylim = c(0.8,4000), 
+                   xlim = c(0.08, max(lakes2012_full$P_mol))) +
+  scale_y_log10() + scale_x_log10();p2
+
+diss_NP.lm = lm(log10(N_mol)~log10(P_mol), data = lakes2012_full)
+
+p3 = p2 + geom_text(aes(x = 0.09, y = 9.5, label = "100", size = 30), colour = "grey50", fontface = "bold", hjust = 1) +
+  geom_text(aes(x = 0.09, y = 4.75, label = "50", size = 30), colour = "grey50", fontface = "bold", hjust = 1) +
+  geom_text(aes(x = 0.09, y = 0.95, label = "10", size = 30), colour = "grey50", fontface = "bold", hjust = 1) +
+  geom_text(aes(x = 0.09, y = 47.5, label = "500", size = 30), colour = "grey50", fontface = "bold", hjust = 1) +
+  geom_text(aes(x = 0.09, y = 95, label = "1000", size = 30), colour = "grey50", fontface = "bold", hjust = 1) +
+  geom_text(aes(x = 0.09, y = 450, label = "5000", size = 30), colour = "grey50", fontface = "bold",hjust = 1) +
+  geom_text(aes(x = 120, y = 11, label = "0.1", size = 30), colour = "grey50", fontface = "bold",hjust = 0) +
+  geom_text(aes(x = 120, y = 60, label = "0.5", size = 30), colour = "grey50", fontface = "bold",hjust = 0) +
+  geom_text(aes(x = 120, y = 120, size = 30, label = "1"), colour = "grey50", fontface = "bold",hjust = 0) +
+  geom_text(aes(x = 120, y = 600, label = "5", size = 30), colour = "grey50", fontface = "bold",hjust = 0) +
+  geom_text(aes(x = 120, y = 1200, label = "10", size = 30), colour = "grey50", fontface = "bold",hjust = 0) +
+  # geom_text(aes(x = 0.88, y = 10, label = "10", size = 30), colour = "grey50", fontface = "bold") +
+  # geom_text(aes(x = 0.88, y = 50, label = "50", size = 30), colour = "grey50", fontface = "bold") +
+  # geom_text(aes(x = 0.88, y = 100, label = "100", size = 30), colour = "grey50", fontface = "bold") +
+  annotate("text",x = 0.08, y = 3000, label = paste("N:P scaling\nexponent =",round(diss_NP.lm$coefficients[2],2),
+                                                   " ± ",round(summary(diss_NP.lm)$coefficients[4],2),sep=""), size = 3, hjust = 0);p3 
+
+
+########## 
+lakes2012_LU = lakes2012_full %>% select(Agriculture:WetlandWater) 
+
+lakes2012_LU_sum = rowSums(lakes2012_LU)
+
+landcover_mds = vegan::metaMDS(lakes2012_LU, distance = "bray", trymax =1000, autotransform = T)
+plot()
 
 
 
