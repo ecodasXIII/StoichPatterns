@@ -1,4 +1,5 @@
 source("./functions/load_packages_function.R")
+theme_set(theme_mod)
 
 # run local_data_load() once to download all the data locally to './raw-data/' folder
 # which is ignored for pushing purposes so csvs are not kept remotely
@@ -63,7 +64,7 @@ leaflet(basin_shapes_ex) %>% #view the subset of
   addPolygons()
 
 #source the lake nlcd function to extract landcover of watersheds
-source("./ecosystem_scripts/Lakes2012/functions/lake_nlcd_function.R")
+source("./Lakes2012/functions/lake_nlcd_function.R")
 
 #run on subset of lakes basin_shapes_ex <- basin_shapes[1:10,]
 # works but takes a while ~9 secs per lake.
@@ -77,45 +78,45 @@ source("./ecosystem_scripts/Lakes2012/functions/lake_nlcd_function.R")
 
 #full run
 #need to break the list into parts because large vectors on some (~900MB!!)
-#1
-basin_shapes1 = basin_shapes[c(1:466),]
-lakes_landuse1 = list()
-tic();for(i in seq_along(basin_shapes[[1]]))lakes_landuse1[[i]] <- get_nlcd_percents(basin_shapes[i,]);toc()
-names(lakes_landuse1) <- basin_shapes1$NLA12_ID
-saveRDS(lakes_landuse1, file = "./ecosystem_scripts/Lakes2012/01_lakes_landuse_list.rds")
-lakes_landuse1 = readRDS(file = "./ecosystem_scripts/Lakes2012/01_lakes_landuse_list.rds")
+# #1
+# basin_shapes1 = basin_shapes[c(1:466),]
+# lakes_landuse1 = list()
+# tic();for(i in seq_along(basin_shapes[[1]]))lakes_landuse1[[i]] <- get_nlcd_percents(basin_shapes[i,]);toc()
+# names(lakes_landuse1) <- basin_shapes1$NLA12_ID
+# saveRDS(lakes_landuse1, file = "./ecosystem_scripts/Lakes2012/01_lakes_landuse_list.rds")
+lakes_landuse1 = readRDS(file = "./Lakes2012/01_lakes_landuse_list.rds")
 ###
-basin_shapes467 = basin_shapes[467,]
-lakes_landuse467 = list()
-tic();for(i in seq_along(basin_shapes467[[1]]))lakes_landuse467[[i]] <- get_nlcd_percents(basin_shapes467[i,]);toc()
-names(lakes_landuse467) <- basin_shapes467$NLA12_ID
-saveRDS(lakes_landuse467, file = "./ecosystem_scripts/Lakes2012/467_lakes_landuse_list.rds")
+# basin_shapes467 = basin_shapes[467,]
+# lakes_landuse467 = list()
+# tic();for(i in seq_along(basin_shapes467[[1]]))lakes_landuse467[[i]] <- get_nlcd_percents(basin_shapes467[i,]);toc()
+# names(lakes_landuse467) <- basin_shapes467$NLA12_ID
+# saveRDS(lakes_landuse467, file = "./ecosystem_scripts/Lakes2012/467_lakes_landuse_list.rds")
 ####
 #2
-basin_shapes2 = basin_shapes[c(468:700),]
-lakes_landuse2 = list()
-tic();for(i in seq_along(basin_shapes2[[1]]))lakes_landuse2[[i]] <- get_nlcd_percents(basin_shapes2[i,]);toc()
-names(lakes_landuse2) <- basin_shapes2$NLA12_ID
-saveRDS(lakes_landuse2, file = "./ecosystem_scripts/Lakes2012/02_lakes_landuse_list.rds")
-#3
-basin_shapes3 = basin_shapes[c(701:1000),]
-lakes_landuse3 = list()
-tic();for(i in seq_along(basin_shapes3[[1]]))lakes_landuse3[[i]] <- get_nlcd_percents(basin_shapes3[i,]);toc()
-names(lakes_landuse3) <- basin_shapes3$NLA12_ID
-saveRDS(lakes_landuse3, file = "./ecosystem_scripts/Lakes2012/03_lakes_landuse_list.rds")
-#4
-basin_shapes4 = basin_shapes[c(1001:1500),]
-lakes_landuse4 = list()
-tic();for(i in seq_along(basin_shapes4[[1]]))lakes_landuse4[[i]] <- get_nlcd_percents(basin_shapes4[i,]);toc()
-names(lakes_landuse4) <- basin_shapes4$NLA12_ID
-saveRDS(lakes_landuse4, file = "./ecosystem_scripts/Lakes2012/04_lakes_landuse_list.rds")
-#5
-basin_shapes5 = basin_shapes[c(1501:1714),]
-lakes_landuse5 = list()
-tic();for(i in seq_along(basin_shapes5[[1]]))lakes_landuse5[[i]] <- get_nlcd_percents(basin_shapes5[i,]);toc()
-names(lakes_landuse5) <- basin_shapes5$NLA12_ID
-saveRDS(lakes_landuse5, file = "./ecosystem_scripts/Lakes2012/05_lakes_landuse_list.rds")
-
+# basin_shapes2 = basin_shapes[c(468:700),]
+# lakes_landuse2 = list()
+# tic();for(i in seq_along(basin_shapes2[[1]]))lakes_landuse2[[i]] <- get_nlcd_percents(basin_shapes2[i,]);toc()
+# names(lakes_landuse2) <- basin_shapes2$NLA12_ID
+# saveRDS(lakes_landuse2, file = "./ecosystem_scripts/Lakes2012/02_lakes_landuse_list.rds")
+# #3
+# basin_shapes3 = basin_shapes[c(701:1000),]
+# lakes_landuse3 = list()
+# tic();for(i in seq_along(basin_shapes3[[1]]))lakes_landuse3[[i]] <- get_nlcd_percents(basin_shapes3[i,]);toc()
+# names(lakes_landuse3) <- basin_shapes3$NLA12_ID
+# saveRDS(lakes_landuse3, file = "./ecosystem_scripts/Lakes2012/03_lakes_landuse_list.rds")
+# #4
+# basin_shapes4 = basin_shapes[c(1001:1500),]
+# lakes_landuse4 = list()
+# tic();for(i in seq_along(basin_shapes4[[1]]))lakes_landuse4[[i]] <- get_nlcd_percents(basin_shapes4[i,]);toc()
+# names(lakes_landuse4) <- basin_shapes4$NLA12_ID
+# saveRDS(lakes_landuse4, file = "./ecosystem_scripts/Lakes2012/04_lakes_landuse_list.rds")
+# #5
+# basin_shapes5 = basin_shapes[c(1501:1714),]
+# lakes_landuse5 = list()
+# tic();for(i in seq_along(basin_shapes5[[1]]))lakes_landuse5[[i]] <- get_nlcd_percents(basin_shapes5[i,]);toc()
+# names(lakes_landuse5) <- basin_shapes5$NLA12_ID
+# saveRDS(lakes_landuse5, file = "./ecosystem_scripts/Lakes2012/05_lakes_landuse_list.rds")
+# 
 
 #######  CODE FOR RMARKDOWN OUTPUT #########
 
@@ -204,56 +205,17 @@ lakes2012_full = inner_join(lakes2012_CNP, land_use_df %>% spread(key = class_na
 log_breaks = c(log10(0.5), log10(1), log10(5), log10(10), log10(50), log10(100), log10(500), log10(1000), log10(5000), log10(10000), log10(50000),log10(100000))
 raw_breaks = round(10^(log_breaks),3)
 
-Area_plot = ggplot(lakes2012_full, aes(x = log10(AREA_HA))) + geom_histogram() +
-  scale_x_continuous(name = "Lake Area (Hectares)", breaks = log_breaks, labels = raw_breaks)+
+lake_area_plot = ggplot(lakes2012_full, aes(x = log10(AREA_HA))) + geom_histogram() +
+  scale_x_continuous(name = "Lake Area (Hectares)", breaks = log_breaks, labels = raw_breaks, expand = c(0.01,0))+
+  scale_y_continuous(expand = c(0.01,0))+
   theme(panel.grid = element_blank(), axis.title.y = element_blank(), 
         axis.text.x = element_text(angle = 45, hjust = 1,margin = margin(t = 3)))
+lake_area_plot
 
-######## Create stoic isocline dataframe for plotting
-NP_0.1 = data.frame(Stoic = "NP_0.1", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.1)
-NP_0.2 = data.frame(Stoic = "NP_0.2", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.2)
-NP_0.3 = data.frame(Stoic = "NP_0.3", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.3)
-NP_0.4 = data.frame(Stoic = "NP_0.4", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.4)
-NP_0.5 = data.frame(Stoic = "NP_0.5", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.5)
-NP_0.6 = data.frame(Stoic = "NP_0.6", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.6)
-NP_0.7 = data.frame(Stoic = "NP_0.7", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.7)
-NP_0.8 = data.frame(Stoic = "NP_0.8", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.8)
-NP_0.9 = data.frame(Stoic = "NP_0.9", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*0.9)
-NP_1 = data.frame(Stoic = "NP_1", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1))
-NP_2 = data.frame(Stoic = "NP_2", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*2)
-NP_3 = data.frame(Stoic = "NP_3", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*3)
-NP_4 = data.frame(Stoic = "NP_4", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*4)
-NP_5 = data.frame(Stoic = "NP_5", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*5)
-NP_6 = data.frame(Stoic = "NP_6", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*6)
-NP_7 = data.frame(Stoic = "NP_7", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*7)
-NP_8 = data.frame(Stoic = "NP_8", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*8)
-NP_9 = data.frame(Stoic = "NP_9", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*9)
-NP_10 = data.frame(Stoic = "NP_10", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*10)
-NP_20 = data.frame(Stoic = "NP_20", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*20)
-NP_30 = data.frame(Stoic = "NP_30", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*30)
-NP_40 = data.frame(Stoic = "NP_40", Ppool = seq(0.0001,10000, by = .1), Npool = seq(0.0001,10000, by = .1)*40)
-NP_50 = data.frame(Stoic = "NP_50", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*50)
-NP_60 = data.frame(Stoic = "NP_60", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*60)
-NP_70 = data.frame(Stoic = "NP_70", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*70)
-NP_80 = data.frame(Stoic = "NP_80", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*80)
-NP_90 = data.frame(Stoic = "NP_90", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*90)
-NP_100 = data.frame(Stoic = "NP_100", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*100)
-NP_200 = data.frame(Stoic = "NP_200", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*200)
-NP_300 = data.frame(Stoic = "NP_300", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*300)
-NP_400 = data.frame(Stoic = "NP_400", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*400)
-NP_500 = data.frame(Stoic = "NP_500", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*500)
-NP_1000 = data.frame(Stoic = "NP_1000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*1000)
-NP_2000 = data.frame(Stoic = "NP_2000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*2000)
-NP_3000 = data.frame(Stoic = "NP_3000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*3000)
-NP_4000 = data.frame(Stoic = "NP_4000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*4000)
-NP_5000 = data.frame(Stoic = "NP_5000", Ppool = seq(0.0001,10000, by = 0.1), Npool = seq(0.0001,10000, by = 0.1)*5000)
 
-NP = data.frame(rbind(NP_0.1, NP_0.2,NP_0.3,NP_0.4, NP_0.5, NP_0.6, NP_0.7, NP_0.8, NP_0.9, NP_1, NP_2, NP_3, NP_4, NP_5, NP_6, NP_7, NP_8, NP_9, NP_10,
-                      NP_20, NP_30, NP_40, NP_50, NP_60, NP_70, NP_80, NP_90, NP_100, NP_200, NP_300, NP_400, NP_500, NP_1000, NP_2000, NP_3000, NP_4000, 
-                      NP_5000), stringsAsFactors = T)
-NP$Stoic = factor(NP$Stoic)
- NP = NP[-which(NP$Npool > 3800 | NP$Npool < 0.9 | NP$Ppool > 120 | NP$Ppool < 0.1),]
+# NP = NP[-which(NP$Npool > 3800 | NP$Npool < 0.9 | NP$Ppool > 120 | NP$Ppool < 0.1),]
 # lines = c("solid", rep("dotted", 3), "dashed", rep("dotted", 4), "solid", "solid", "solid", rep("dotted", 6), "dashed", "dashed",rep("dotted", 8), rep("dotted", 4))
+
 lines = c(rep(c('solid','dotted','dotted','dotted','dashed', 'dotted','dotted','dotted','dotted'),3),
           'solid','dotted','dotted','dotted','dashed','solid','dotted','dotted','dotted','dashed')
 p1 = ggplot() +
@@ -261,16 +223,17 @@ p1 = ggplot() +
   scale_linetype_manual(values = lines) + theme_bw()+
   theme(panel.grid = element_blank(), legend.position = "none", axis.text = element_text(size = 20))#;p1
 
-p1 = p1 + geom_point(data = lakes2012_full, aes(x = P_mol, y = N_mol), fill = 'red',  shape = 21, colour = "black", size = 2) + 
+p1a = p1 + geom_point(data = lakes2012_full, aes(x = P_mol, y = N_mol), fill = 'red',  shape = 21, colour = "black", size = 2) + 
   xlab(expression("Phosphorus ("~mu*"mol)")) +
   ylab(expression("Nitrogen ("~mu*"mol)"))
 
-p2 = p1 +   
+p2 = p1a +   
    coord_cartesian(ylim = c(0.8,4000), 
                    xlim = c(0.08, max(lakes2012_full$P_mol))) +
   scale_y_log10() + scale_x_log10();p2
 
 diss_NP.lm = lm(log10(N_mol)~log10(P_mol), data = lakes2012_full)
+summary(diss_NP.lm);exp(diss_NP.lm$coefficients["(Intercept)"])
 
 p3 = p2 + geom_text(aes(x = 0.09, y = 9.5, label = "100", size = 30), colour = "grey50", fontface = "bold", hjust = 1) +
   geom_text(aes(x = 0.09, y = 4.75, label = "50", size = 30), colour = "grey50", fontface = "bold", hjust = 1) +
@@ -287,10 +250,13 @@ p3 = p2 + geom_text(aes(x = 0.09, y = 9.5, label = "100", size = 30), colour = "
   # geom_text(aes(x = 0.88, y = 50, label = "50", size = 30), colour = "grey50", fontface = "bold") +
   # geom_text(aes(x = 0.88, y = 100, label = "100", size = 30), colour = "grey50", fontface = "bold") +
   annotate("text",x = 0.08, y = 3000, label = paste("N:P scaling\nexponent =",round(diss_NP.lm$coefficients[2],2),
-                                                   " ± ",round(summary(diss_NP.lm)$coefficients[4],2),sep=""), size = 3, hjust = 0);p3 
-
-
+                                                   " ± ",round(summary(diss_NP.lm)$coefficients[4],2),sep=""), size = 4, hjust = 0);p3
 ########## 
+
+p1b = p1 + geom_point(data = lakes2012_full, aes(x = P_mol, y = N_mol), fill = 'red',  shape = 21, colour = "black", size = 2) + 
+  xlab(expression("Phosphorus ("~mu*"mol)")) +
+  ylab(expression("Nitrogen ("~mu*"mol)"))
+
 lakes2012_LU = lakes2012_full %>% select(Agriculture:WetlandWater) 
 
 lakes2012_LU_sum = rowSums(lakes2012_LU)
