@@ -76,13 +76,13 @@ Grab the follow variables:
 -NTL_QA_FLAG -> total N QA/QC flag  
 -PTL_RESULT -> total P result mg/L  
 -PTL_QA_FLAG -> total P QA/QC flag 
+-AGGR_ECO3_2015 -> EcoRegion variable
 
 *Other variables of interest may be:
--AGGR_ECO3_2015 -> EcoRegion variable
 -
 
 ```{r variable select}
-lakevars <- c("UID", "SITE_ID", "DATE_COL", "DOC_RESULT", "DOC_QA_FLAG", "NTL_RESULT", "NTL_QA_FLAG", "PTL_RESULT", "PTL_QA_FLAG")
+lakevars <- c("UID", "SITE_ID", "DATE_COL", "DOC_RESULT", "DOC_QA_FLAG", "NTL_RESULT", "NTL_QA_FLAG", "PTL_RESULT", "PTL_QA_FLAG", "AGGR_ECO3_2015")
 ```
 
 Create new CNP data frame: lakes2012_CNP
